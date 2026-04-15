@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>FRB - Command 1</Text>
+    <Description>Some description</Description>
+    <Assembly>FRB\FRB.dll</Assembly>
+    <FullClassName>FRB.Command1</FullClassName>
+    <ClientId>b6fe7e0d-451a-4762-9051-4ed7ba163fc8</ClientId>
+    <VendorId>AAI</VendorId>
+    <VendorDescription>Adamson Associates (International) Limited https://www.adamson-associates.com/</VendorDescription>
+  </AddIn>
+  <AddIn Type="Command">
+    <Text>FRB - Command 2</Text>
+    <Description>Some description</Description>
+    <Assembly>FRB\FRB.dll</Assembly>
+    <FullClassName>FRB.Command2</FullClassName>
+    <ClientId>eb999864-f4c6-4707-877d-5dd242530e9d</ClientId>
+    <VendorId>AAI</VendorId>
+    <VendorDescription>Adamson Associates (International) Limited https://www.adamson-associates.com/</VendorDescription>
+  </AddIn>
+  <AddIn Type="Application">
+    <Name>FRB</Name>
+    <Assembly>FRB\FRB.dll</Assembly>
+    <FullClassName>FRB.App</FullClassName>
+    <ClientId>e1ab4e9d-3c46-4bcd-aa2b-74c60cacc2dd</ClientId>
+    <VendorId>AAI</VendorId>
+    <VendorDescription>Adamson Associates (International) Limited https://www.adamson-associates.com/</VendorDescription>
+  </AddIn>
+</RevitAddIns>
