@@ -12,6 +12,18 @@
 
             // ▼ Your code goes here ▼
 
+            using (Transaction t = new Transaction(doc))
+            {
+                t.Start("Create schedule");
+
+                // 01. Create schedule
+                ElementId catId = new ElementId(BuiltInCategory.OST_Doors);
+                ViewSchedule newSchedule = ViewSchedule.CreateSchedule(doc, catId);
+                newSchedule.Name = "My Door Schedule";
+
+                t.Commit();
+            }
+
             return Result.Succeeded;
         }
 
