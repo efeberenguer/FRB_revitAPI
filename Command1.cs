@@ -21,6 +21,30 @@
                 ViewSchedule newSchedule = ViewSchedule.CreateSchedule(doc, catId);
                 newSchedule.Name = "My Door Schedule";
 
+                // 02a. Get parameters for fields
+                FilteredElementCollector doorCollector = new FilteredElementCollector(doc);
+                doorCollector.OfCategory(BuiltInCategory.OST_Doors);
+                doorCollector.WhereElementIsNotElementType();
+
+                Element doorInst = doorCollector.FirstElement();
+
+                Parameter doorNumParam = doorInst.LookupParameter("Mark");
+                Parameter doorLevelParam = doorInst.LookupParameter("Level");
+
+                Parameter doorWidthParam = doorInst.get_Parameter(BuiltInParameter.DOOR_WIDTH);
+                Parameter doorHeightParam = doorInst.get_Parameter(BuiltInParameter.DOOR_HEIGHT);
+                Parameter doorTypeParam = doorInst.get_Parameter(BuiltInParameter.ELEM_FAMILY_AND_TYPE_PARAM);
+
+                // 02b. Create fields
+                ScheduleField doorNumField = newSchedule.Definition.AddField(ScheduleFieldType.Instance, doorNumParam.Id);
+                ScheduleField doorLevelField = newSchedule.Definition.AddField(ScheduleFieldType.Instance, doorLevelParam.Id);
+                ScheduleField doorWidthField = newSchedule.Definition.AddField(ScheduleFieldType.ElementType, doorWidthParam.Id);
+                ScheduleField doorHeightField = newSchedule.Definition.AddField(ScheduleFieldType.ElementType, doorHeightParam.Id);
+                ScheduleField doorTypeField = newSchedule.Definition.AddField(ScheduleFieldType.Instance, doorTypeParam.Id);
+
+                doorLevelField.IsHidden = true;
+                doorWidthField.DisplayType = ScheduleFieldDisplayType.Totals;
+
                 t.Commit();
             }
 
