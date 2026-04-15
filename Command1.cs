@@ -45,6 +45,22 @@
                 doorLevelField.IsHidden = true;
                 doorWidthField.DisplayType = ScheduleFieldDisplayType.Totals;
 
+                // 03 . Filter by level
+                Level filterLevel = GetLevelByName(doc, "01 - Entry Level");
+                ScheduleFilter levelFilter = new ScheduleFilter(doorLevelField.FieldId, ScheduleFilterType.Equal, filterLevel.Id);
+                newSchedule.Definition.AddFilter(levelFilter);
+
+                // 04a. Group schedule data
+                ScheduleSortGroupField typeSort = new ScheduleSortGroupField(doorTypeField.FieldId);
+                typeSort.ShowHeader = true;
+                typeSort.ShowFooter = true;
+                typeSort.ShowBlankLine = true;
+                newSchedule.Definition.AddSortGroupField(typeSort);
+
+                // 04b. Sort schedule data
+                ScheduleSortGroupField markSort = new ScheduleSortGroupField(doorNumField.FieldId);
+                newSchedule.Definition.AddSortGroupField(markSort);
+
                 t.Commit();
             }
 
@@ -52,6 +68,21 @@
         }
 
         // ▲ Your code goes here ▲
+
+        private Level GetLevelByName(Document doc, string levelName)
+        {
+            FilteredElementCollector collector = new FilteredElementCollector(doc);
+            collector.OfCategory(BuiltInCategory.OST_Levels);
+            collector.WhereElementIsNotElementType();
+
+            foreach (Level curLevel in collector)
+            {
+                if (curLevel.Name == levelName)
+                    return curLevel;
+            }
+
+            return null;
+        }
         internal static PushButtonData GetButtonData()
         {
             // use this method to define the properties for this command in the Revit ribbon
