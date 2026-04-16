@@ -61,12 +61,6 @@
                 ScheduleSortGroupField markSort = new ScheduleSortGroupField(doorNumField.FieldId);
                 newSchedule.Definition.AddSortGroupField(markSort);
 
-                // 05. Set totals
-                newSchedule.Definition.IsItemized = true;
-                newSchedule.Definition.ShowGrandTotal = true;
-                newSchedule.Definition.ShowGrandTotalTitle = true;
-                newSchedule.Definition.ShowGrandTotalCount = true;
-
                 t.Commit();
             }
 
