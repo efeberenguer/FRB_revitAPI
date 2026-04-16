@@ -45,7 +45,7 @@
                 doorLevelField.IsHidden = true;
                 doorWidthField.DisplayType = ScheduleFieldDisplayType.Totals;
 
-                // 03 . Filter by level
+                // 03. Filter by level
                 Level filterLevel = GetLevelByName(doc, "01 - Entry Level");
                 ScheduleFilter levelFilter = new ScheduleFilter(doorLevelField.FieldId, ScheduleFilterType.Equal, filterLevel.Id);
                 newSchedule.Definition.AddFilter(levelFilter);
@@ -69,6 +69,11 @@
 
                 t.Commit();
             }
+
+            // 06. Filter a list for unique items
+            List<string> rawStrings = new List<string>() { "a", "a", "d", "c", "c", "d", "b", "d" };
+            List<string> uniqueStrings = rawStrings.Distinct().ToList();
+            uniqueStrings.Sort();
 
             return Result.Succeeded;
         }
