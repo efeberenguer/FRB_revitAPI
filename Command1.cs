@@ -1,7 +1,7 @@
 ﻿namespace FRB
 {
     [Transaction(TransactionMode.Manual)]
-    public class Command1 : IExternalCommand
+    public class Command1 : IExternalCommand // ← Rename "Command1" as per the name of the .cs file
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -14,9 +14,12 @@
 
             using (Transaction t = new Transaction(doc))
             {
-                t.Start("Create level");
+                t.Start("Schedule-Palooza!");
 
-                Level secondFloor = Level.Create(doc, 10.0);
+                // Step 1 - Create a collector to get all departments of rooms
+
+                FilteredElementCollector roomDepartments = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Room));
 
                 t.Commit();
             }
