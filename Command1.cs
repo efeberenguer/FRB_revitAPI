@@ -18,8 +18,25 @@
 
                 // Step 1 - Create a collector to get all departments of rooms
 
-                FilteredElementCollector roomDepartments = new FilteredElementCollector(doc)
-                    .OfClass(typeof(Room));
+                /*FilteredElementCollector roomDepartments = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .ToList();*/
+
+                // Step 2 - Create a list with all the different departments
+
+                // Step 3 - Create a schedule for each department. Name should be "Dept - A", "Dept - B", etc.
+
+                // Step 4 - Group the rooms by level
+
+                // Step 5 - Sort the rooms in each level by name
+
+                // Step 5 - Display the area for each level group
+
+                // Step 6 - Calculate the total area and count
+
+                // Benchmark: Display the room number, room name, department, comments, area, and level (hidden field)
+
+                // Bonus: Make a schedule with with all the departments ("All departments")
 
                 t.Commit();
             }
