@@ -28,7 +28,7 @@ List<Room> riserRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
 	.WhereElementIsNotElementType()
 	.Cast<Room>()
-	.Where(r => r.LookupParameter("AAI_RoomNumberingPattern")?.AsString() == "RISER")
+	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "RISER")
     .ToList();
 
 // 1.2 - Renumber rooms from filtered element collector 
@@ -52,7 +52,7 @@ var liftRooms = new FilteredElementCollector(doc)
 	.Cast<Room>()
 	.Where(r => 
         {
-            var pattern = r.LookupParameter("AAI_RoomNumberingPattern")?.AsString();
+            var pattern = r.LookupParameter("Occupancy")?.AsString();
             return pattern == "CL" || pattern == "DW" || pattern == "EL" || pattern == "FF" || pattern == "GL" || pattern == "LP" || pattern == "PL" || pattern == "SL";
         })
     .GroupBy(r => r.LookupParameter("AAI_RoomNumberingPattern").AsString());
@@ -81,7 +81,7 @@ var stairRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
 	.WhereElementIsNotElementType()
 	.Cast<Room>()
-	.Where(r => r.LookupParameter("AAI_RoomNumberingPattern")?.AsString() == "STAIR")
+	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "STAIR")
 	.GroupBy(r => r.Level.Name);
 
 // 3.2 - Renumber rooms from filtered element collector 
@@ -112,7 +112,7 @@ var allOtherRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
 	.WhereElementIsNotElementType()
 	.Cast<Room>()
-	.Where(r => r.LookupParameter("AAI_RoomNumberingPattern")?.AsString() == "ROOM")
+	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "ROOM")
 	.GroupBy(r => r.Level.Name);
 
 // 4.2 - Renumber rooms from filtered element collector 
