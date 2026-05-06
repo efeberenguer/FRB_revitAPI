@@ -1,37 +1,101 @@
 
 // 2026-05-06 - Changes to room numbering script
 
-// ═══ STEP 1 - RISERS ═══
+// Strategy for checking if items in a list are sequentially arranged
 
-// 1.1 - Creation of a filtered element collector to get list L1
+List<string> L1 = new List<string>() { "R01", "R03", "R04", "R05", "R08", "RAA", "RBB", "RCC"};
+List<string> L2 = new List<string>() { "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08"};
 
-List<Room> riserRooms = new FilteredElementCollector(doc)
-	.OfCategory(BuiltInCategory.OST_Rooms)
-	.WhereElementIsNotElementType()
-	.Cast<Room>()
-	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "RISER")
-    .ToList();
-        
-// 1.2 - Creation of list L2
+// Initial conditions check
 
-int riserRoomsL2Count = riserRooms.Count;
+Console.WriteLine("═════ INITIAL CONDITIONS ═════\n");
 
-List<string> riserRoomsL2 = new List<string>();
+Console.WriteLine("═══ LIST L1 ═══\n");
 
-for(int i = 1; i <= riserRoomsL2Count; i++)
+int L1index = 0;
+foreach (string item in L1)
 {
- 	string riserRoomsL2index = $"R{i.ToString("D2")}";
- 	riserRoomsL2.Add(riserRoomsL2index);
- 	Console.WriteLine($"{riserRoomsL2index}");
+	Console.WriteLine($"Item index: {L1index} - {item}");
+	L1index++;
 }
 
-// 1.2 - Renumber rooms from filtered element collector 
-/*
-int roomIndex = 1;
-foreach (Room riserRoom in riserRooms)
+
+Console.WriteLine("\n\n═══ LIST L2 ═══\n");
+
+int L2index = 0;
+foreach (string item in L2)
 {
-    string roomIndexString = roomIndex.ToString("D2");
-    Parameter riserRoomsNumber = riserRoom.LookupParameter("Number");
-    riserRoomsNumber.Set($"R{roomIndexString}");
-    roomIndex++;
-}*/
+	Console.WriteLine($"Item index: {L2index} - {item}");
+	L2index++;
+}
+
+// Remove items from L1 that don't exist in L2
+
+Console.WriteLine("\n\n═════ REMOVE ITEMS FROM L1 THAT DON'T EXIST IN L2 ═════");
+
+foreach (string item in L1.ToList())
+{
+    if (!L2.Contains(item))
+    {
+        L1.Remove(item);
+    }
+}
+
+Console.WriteLine("\n\n═══ REVISED LIST L1 ═══\n");
+
+L1index = 0;
+foreach (string item in L1)
+{
+	Console.WriteLine($"Item index: {L1index} - {item}");
+	L1index++;
+}
+
+Console.WriteLine("\n\n═══ LIST L2 ═══\n");
+
+L2index = 0;
+foreach (string item in L2)
+{
+	Console.WriteLine($"Item index: {L2index} - {item}");
+	L2index++;
+}
+
+
+// Remove items from L2 that exist in L1
+
+Console.WriteLine("\n\n═════ REMOVE REDUNDANT ITEMS FROM L2 ═════");
+
+foreach (string item in L2.ToList())
+{
+    if (L1.Contains(item))
+    {
+        L2.Remove(item);
+    }
+}
+
+Console.WriteLine("\n\n═══ REVISED LIST L2 ═══");
+
+L2index = 0;
+foreach (string item in L2)
+{
+	Console.WriteLine($"Item index: {L2index} - {item}");
+	L2index++;
+}
+L2index = 0;
+
+// Merge items from L2 into L1
+
+Console.WriteLine("\n\n═════ MERGE L2 INTO L1 ═════");
+
+foreach (string item in L2.ToList())
+{
+    L1.Add(item);
+}
+
+Console.WriteLine("\n\n═══ FINAL LIST L1 ═══\n");
+
+L1index = 0;
+foreach (string item in L1)
+{
+	Console.WriteLine($"Item index: {L1index} - {item}");
+	L1index++;
+}
