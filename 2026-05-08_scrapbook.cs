@@ -258,3 +258,134 @@ foreach (var group in liftRooms)
 	}
 }
 */
+
+// Examples from ChatGPT
+
+// ==========================================
+// RECAP: ALL ROOM SORTING + DUPLICATE LOGIC
+// Revit API C# snippets from today's session
+// ==========================================
+
+
+// ------------------------------------------
+// 1. GET ROOMS FROM PROJECT
+// ------------------------------------------
+List<Room> rooms = new FilteredElementCollector(doc)
+    .OfCategory(BuiltInCategory.OST_Rooms)
+    .WhereElementIsNotElementType()
+    .Cast<Room>()
+    .Where(r => r.Area > 0)
+    .ToList();
+
+
+// ------------------------------------------
+// 2. SORT ROOMS BY ROOM NUMBER (STRING SORT)
+// ------------------------------------------
+List<Room> sortedRooms = rooms
+    .OrderBy(r => r.Number)
+    .ToList();
+
+
+// DESCENDING SORT
+List<Room> sortedRoomsDesc = rooms
+    .OrderByDescending(r => r.Number)
+    .ToList();
+
+
+// ------------------------------------------
+// 3. NATURAL SORT (NUMERIC ROOM NUMBERS)
+// ------------------------------------------
+using System.Text.RegularExpressions;
+
+List<Room> naturalSortedRooms = rooms
+    .OrderBy(r =>
+    {
+        Match m = Regex.Match(r.Number ?? "", @"\d+");
+        return m.Success ? int.Parse(m.Value) : int.MaxValue;
+    })
+    .ThenBy(r => r.Number)
+    .ToList();
+
+
+// ------------------------------------------
+// 4. GROUP + FIND DUPLICATE ROOM NUMBERS
+// ------------------------------------------
+
+// Get all rooms with duplicate numbers (includes ALL duplicates)
+List<Room> duplicateRooms = rooms
+    .GroupBy(r => r.Number)
+    .Where(g => g.Count() > 1)
+    .SelectMany(g => g)
+    .ToList();
+
+
+// ------------------------------------------
+// 5. GET ONLY DUPLICATE ROOM NUMBERS (STRINGS)
+// ------------------------------------------
+List<string> duplicateNumbers = rooms
+    .GroupBy(r => r.Number)
+    .Where(g => g.Count() > 1)
+    .Select(g => g.Key)
+    .ToList();
+
+
+// ------------------------------------------
+// 6. MOVE DUPLICATES TO SEPARATE LIST (KEEP ALL)
+// ------------------------------------------
+List<Room> duplicateRoomsList = new List<Room>();
+
+duplicateRoomsList.AddRange(
+    rooms
+        .GroupBy(r => r.Number)
+        .Where(g => g.Count() > 1)
+        .SelectMany(g => g)
+);
+
+
+// ------------------------------------------
+// 7. REMOVE ALL DUPLICATES FROM ORIGINAL LIST
+// ------------------------------------------
+var duplicates = rooms
+    .GroupBy(r => r.Number)
+    .Where(g => g.Count() > 1)
+    .SelectMany(g => g)
+    .ToList();
+
+rooms.RemoveAll(r =>
+    duplicates.Any(d => d.Id == r.Id));
+
+
+// ------------------------------------------
+// 8. KEEP ONLY FIRST INSTANCE, MOVE REST
+// ------------------------------------------
+
+// redundant rooms = everything except first in each group
+List<Room> redundantRooms = rooms
+    .GroupBy(r => r.Number)
+    .SelectMany(g => g.Skip(1))
+    .ToList();
+
+// separate list
+List<Room> duplicateRoomsOnlySecondPlus = new List<Room>();
+duplicateRoomsOnlySecondPlus.AddRange(redundantRooms);
+
+// remove from original list
+rooms.RemoveAll(r =>
+    redundantRooms.Any(rr => rr.Id == r.Id));
+
+
+// ------------------------------------------
+// 9. OPTIMIZED VERSION (FASTER REMOVAL)
+// ------------------------------------------
+HashSet<ElementId> redundantIds = rooms
+    .GroupBy(r => r.Number)
+    .SelectMany(g => g.Skip(1))
+    .Select(r => r.Id)
+    .ToHashSet();
+
+List<Room> duplicateRoomsOptimized = rooms
+    .Where(r => redundantIds.Contains(r.Id))
+    .ToList();
+
+rooms.RemoveAll(r =>
+    redundantIds.Contains(r.Id));
