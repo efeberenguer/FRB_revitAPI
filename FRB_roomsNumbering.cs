@@ -111,7 +111,7 @@ foreach (var group in liftRooms)
 	
 	// The hash set is for checking for duplicates
 	
-	HashSet<string> seenRoomNumbers = new HashSet<string>();	
+	HashSet<string> seenLiftRoomNumbers = new HashSet<string>();	
 	
 	for (int i = groupCount - 1; i >= 0; i--)
 	{
@@ -119,7 +119,7 @@ foreach (var group in liftRooms)
 		string roomNumber = r.Number;
 		
 		// If Add() returns false, the number already exists
-		if (!seenRoomNumbers.Add(roomNumber))
+		if (!seenLiftRoomNumbers.Add(roomNumber))
 		{
 			Console.WriteLine($"Duplicate room - Number: {roomNumber}");
 			nonCompliantRooms.Add(r);
