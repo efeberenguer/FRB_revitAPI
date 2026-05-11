@@ -20,7 +20,7 @@ This script works by adding the rooms to different filtered element collectors u
 
 // ═══ STEP 1 - RISERS ═══
 
-// 1.1 - Creation of a filtered element collector 
+// 1.1 - Creation of a filtered element collector grouping the rooms by Occupancy input
 
 List<Room> riserRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
@@ -28,16 +28,117 @@ List<Room> riserRooms = new FilteredElementCollector(doc)
 	.Cast<Room>()
 	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "R")
     .ToList();
+    
+int riserRoomsCount = riserRooms.Count(); // returns the variable to provide a list of sequential room numbers
 
-// 1.2 - Renumber rooms from filtered element collector 
+Console.WriteLine($"\n═══ SOURCE ROOMS FROM MODEL ═══\n");
 
-int roomIndex = 1;
-foreach (Room riserRoom in riserRooms)
+foreach (Room r in riserRooms)
 {
-    string roomIndexString = roomIndex.ToString("D2");
-    Parameter riserRoomsNumber = riserRoom.LookupParameter("Number");
-    riserRoomsNumber.Set($"R{roomIndexString}");
-    roomIndex++;
+	string s = r.Number.ToString();
+	Console.Write($"{s}, ");
+}
+
+// 1.2 - Sorts the previous list of rooms by number
+
+List<Room> sourceRiserRoomsSorted = riserRooms
+    .OrderBy(r => r.Number)
+    .ToList();
+    
+Console.WriteLine($"\n\n═══SORTED ROOMS FROM MODEL ═══\n");
+foreach (Room r in sourceRiserRoomsSorted)
+{
+	string s = r.Number.ToString();
+	Console.Write($"{s}, ");
+}
+
+// 1.3 - Empty string list that will hold all the correct sequential room numbers
+
+List<string> sequentialRiserRoomNumbers = new List<string>(); 	
+	
+Console.WriteLine($"\n\n═══ SEQUENTIAL ROOM NUMBERS ═══\n");
+
+for (int i = 1; i <= riserRoomsCount; i++)
+{
+	string s = $"R{i.ToString("D2")}";
+	Console.Write($"{s}, ");
+	sequentialRiserRoomNumbers.Add(s);
+}
+
+// 1.4 - Empty list where the rooms with non-compliant room numbers will be sent for processing
+	
+List<Room> nonCompliantRiserRooms = new List<Room>(); 
+
+// 1.5 - Checks for either non-compliant room numbers or duplicate room numbers in the sorted room numbers list
+// this criteria is based on whether the room numbers have a match in the sequential list or not
+
+Console.WriteLine($"\n\n═══ ROOM NUMBERS EVALUATION ═══\n");
+	
+// The hash set is for checking for duplicates
+
+HashSet<string> seenRiserRoomNumbers = new HashSet<string>();	
+
+for (int i = riserRoomsCount - 1; i >= 0; i--)
+{
+	Room r = sourceRiserRoomsSorted[i];
+	string roomNumber = r.Number;
+	
+	// If Add() returns false, the number already exists
+	if (!seenRiserRoomNumbers.Add(roomNumber))
+	{
+		nonCompliantRiserRooms.Add(r);
+		sourceRiserRoomsSorted.RemoveAt(i);
+	}
+	else if(!sequentialRiserRoomNumbers.Contains(roomNumber))
+	{
+		nonCompliantRiserRooms.Add(r);
+		sourceRiserRoomsSorted.Remove(r);
+	}	
+}
+
+foreach (Room r in sourceRiserRoomsSorted)
+{
+	Console.WriteLine($"Retained room - Number: {r.Number.ToString()}");
+}
+
+foreach (Room r in nonCompliantRiserRooms)
+{
+	Console.WriteLine($"Non-compliant room - Number: {r.Number.ToString()}");
+}
+
+// 1.6 - Modifies the sequential room numbers list based on the retained rooms
+
+foreach (string s in sequentialRiserRoomNumbers.ToList())
+{
+	foreach (Room r in sourceRiserRoomsSorted)
+	{
+		string roomNumber = r.Number;
+		
+		if(s == roomNumber)
+		{
+			sequentialRiserRoomNumbers.Remove(s);
+		}
+	}
+}
+
+// 1.7 - Renumbers the non-compliant rooms
+
+foreach (Room r in nonCompliantRiserRooms)
+{
+	Parameter roomNumber = r.LookupParameter("Number");
+	string s = sequentialRiserRoomNumbers[0];
+	sequentialRiserRoomNumbers.RemoveAt(0);
+	roomNumber.Set(s);
+}
+
+// 1.8 - Confirs the renumbered rooms
+	
+Console.WriteLine($"\n\n═══ RENUMBERED RISER ROOMS ═══\n");
+
+foreach (Room r in nonCompliantRiserRooms)
+{
+	string roomNumber = r.Number;
+	Console.WriteLine($"Renumbered room: {roomNumber}");
 }
 
 // ═══ STEP 2 - LIFTS ═══
