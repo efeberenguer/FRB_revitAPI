@@ -4,8 +4,8 @@
 The purpose of this script is to automate the process of numbering rooms in Revit models following the Adamson Associates (International) Ltd (AAI) standards as described in document AAIUK-AAI-DB-XX-DR-A-00010_P02.
 
 This script works by adding the rooms to different filtered element collectors using the parameter "Occupancy". This is a text parameter applied to rooms by instance. Below there is a list of the values required for each room category to be renamed as per AAI standards:
-- Risers: 					RISER
-- Stairs: 					STAIR
+- Risers: 					R
+- Stairs: 					ST##
 - Lifts
     - Bicycle Lift: 		CL
     - Dumbwaiter: 			DW
@@ -15,7 +15,7 @@ This script works by adding the rooms to different filtered element collectors u
     - Lifting Platform: 	LP
     - Passenger Lift: 		PL
     - Stair Lift: 			SL
-- All other room types: 	ROOM
+- All other room types: 	"null"
 */
 
 // ═══ STEP 1 - RISERS ═══
@@ -26,7 +26,7 @@ List<Room> riserRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
 	.WhereElementIsNotElementType()
 	.Cast<Room>()
-	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "RISER")
+	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "R")
     .ToList();
 
 // 1.2 - Renumber rooms from filtered element collector 
