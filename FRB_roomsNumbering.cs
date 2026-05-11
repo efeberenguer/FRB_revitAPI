@@ -281,32 +281,35 @@ foreach (var group in liftRooms)
 
 // ═══ STEP 3 - STAIRS ═══
 
-// 3.1 - Creation of a filtered element collector 
+// 3.1 - Creation of a filtered element collector grouping the rooms by Occupancy input
 
 var stairRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
 	.WhereElementIsNotElementType()
 	.Cast<Room>()
-	.Where(r => r.LookupParameter("Occupancy")?.AsString() == "STAIR")
-	.GroupBy(r => r.Level.Name);
+	.Where(r =>
+    {
+        string occupancy = r.LookupParameter("Occupancy")?.AsString();
 
-// 3.2 - Renumber rooms from filtered element collector 
-
-Console.WriteLine("\nSTEP 3.2 TEST PRINT\n");
-
-Console.WriteLine("Rooms grouped by level:");
+        return !string.IsNullOrEmpty(occupancy) &&
+               occupancy.StartsWith("ST");
+    })
+    .GroupBy(r => r.Level.Name);
+    
 foreach (var group in stairRooms)
 {
-	Console.WriteLine($"\n{group.Key}: {group.Count()} stair rooms");
-	int roomIndex = 1;
-	foreach (Room stairRooms in group)
+
+	string groupKey = group.Key; // returns the variable for naming each lift type group
+	
+	// 3.2 - Processes the rooms and renumbers them
+	
+	foreach (Room r in group)
 	{
-		Level roomLevel = stairRooms.Level;
-		string roomLevelString = roomLevel.Name.ToString();
-		string roomIndexString = roomIndex.ToString("D2");		
-		Parameter stairRoomsNumber = stairRooms.LookupParameter("Number");
-		stairRoomsNumber.Set($"{roomLevelString}-ST{roomIndexString}");
-        roomIndex++;
+		string occupancy = r.LookupParameter("Occupancy").AsString();
+		string s = $"{groupKey}-{occupancy}";
+		Parameter roomNumber = r.LookupParameter("Number");
+		roomNumber.Set(s);
+		Console.WriteLine($"Room Number: {s}");
 	}
 }
 
