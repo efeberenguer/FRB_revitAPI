@@ -281,7 +281,7 @@ foreach (var group in liftRooms)
 
 // ═══ STEP 3 - STAIRS ═══
 
-// 3.1 - Creation of a filtered element collector grouping the rooms by Occupancy input
+// 3.1 - Creation of a filtered element collector grouping the rooms by level
 
 var stairRooms = new FilteredElementCollector(doc)
 	.OfCategory(BuiltInCategory.OST_Rooms)
