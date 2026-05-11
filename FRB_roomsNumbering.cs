@@ -3,21 +3,19 @@
 /* 
 The purpose of this script is to automate the process of numbering rooms in Revit models following the Adamson Associates (International) Ltd (AAI) standards as described in document AAIUK-AAI-DB-XX-DR-A-00010_P02.
 
-This script numbers the room based on the order in which they were created. If specific rooms are required to follow a sequential numbering they also have to be placed in a specific order. 
-
-This script works by adding the rooms to different filtered element collectors using the parameter "AAI_RoomNumberingPattern". This is a text parameter applied to rooms by instance. Below there is a list of the values required for each room category to be renamed as per AAI standards:
-- Risers: RISER
-- Stairs: STAIR
+This script works by adding the rooms to different filtered element collectors using the parameter "Occupancy". This is a text parameter applied to rooms by instance. Below there is a list of the values required for each room category to be renamed as per AAI standards:
+- Risers: 					RISER
+- Stairs: 					STAIR
 - Lifts
-    - Bicycle Lift: CL
-    - Dumbwaiter: DW
-    - Evacuation Lift: EL
-    - Firefighter's Lift: FF
-    - Goods Lift: GL
-    - Lifting Platform: LP
-    - Passenger Lift: PL
-    - Stair Lift: SL
-- All other room types: ROOM
+    - Bicycle Lift: 		CL
+    - Dumbwaiter: 			DW
+    - Evacuation Lift: 		EL
+    - Firefighter's Lift: 	FF
+    - Goods Lift: 			GL
+    - Lifting Platform: 	LP
+    - Passenger Lift: 		PL
+    - Stair Lift: 			SL
+- All other room types: 	ROOM
 */
 
 // ═══ STEP 1 - RISERS ═══
