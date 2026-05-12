@@ -1,5 +1,5 @@
 /*
-═════    PURPOSE     ═════
+═════     PURPOSE     ═════
 
 The purpose of this script is to:
 - Extract the audit data from the working models
