@@ -12,21 +12,98 @@ The purpose of this script is to:
 
 ═════════════════════════════════ 1.1 AUDITOR ══════════════════════════════════
 
+Parameter required to differentiate between auditor and BIM Lead
+
+*/
+
+string modelAuditor = "Francisco Berenguer";
+
+/*
 ══════════════════════════════ 1.2 PROJECT NUMBER ══════════════════════════════
+*/
 
+ProjectInfo projectInfo = doc.ProjectInformation;
+
+string projectNumber = projectInfo.Number;
+
+if (projectNumber == null)
+	{
+		return null;
+	}
+	
+/*
 ═══════════════════════════════ 1.3 PROJECT NAME ═══════════════════════════════
+*/
 
+string projectName = projectInfo.Name;
+
+if (projectNumber == null)
+	{
+		return null;
+	}
+
+/*
 ═════════════════════════════════ 1.4 BIM LEAD ═════════════════════════════════
 
-══════════════════════════════ 1.5 MODEL ANALYSED ══════════════════════════════
+*/
 
-═══   1.6 MODEL NAME   ═══
+Parameter AAI_BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
-═══   1.7 FILE SIZE   ═══
+string AAI_BIMLead;
 
-═══   1.8 ISSUE DATE   ═══
+if (AAI_BIMLeadParam == null)
+	{
+		return null;
+	}
+else
+	{
+		AAI_BIMLead = AAI_BIMLeadParam.AsString();
+	}
 
-═══   1.9 SCORE   ═══
+/*
+═════════════════════════════ 1.5 PROJECT MANAGER ══════════════════════════════
+
+Separate parameter required to differentiate between auditor and BIM Lead
+
+*/
+
+string projectLead = "Nora Ceaki";
+
+/*
+══════════════════════════════ 1.6 MODEL ANALYSED ══════════════════════════════
+*/
+
+DateTime today = DateTime.Today; 
+
+string currentYear = today.ToString("yyyy");
+string currentMonth = today.ToString("MM");
+string currentDay = today.ToString("dd");
+
+string currentDate = currentYear + "-" + currentMonth + "-" + currentDay;
+
+/*
+═══   1.7 MODEL NAME   ═══
+*/
+
+string fullPath = doc.PathName;
+
+string modelName = System.IO.Path.GetFileNameWithoutExtension(doc.PathName);
+
+/*
+═══   1.8 FILE SIZE   ═══
+*/
+
+FileInfo fi = new FileInfo(fullPath);
+
+long bytes = fi.Length;
+double mb = bytes/(1024*1024);
+
+/*
+═══   1.9 ISSUE DATE   ═══
+*/
+
+/*
+═══   1.10 SCORE   ═══
 
 */
 
@@ -164,4 +241,21 @@ The purpose of this script is to:
 /*
 ═════     8. NAMING CONVENTION     ═════
 */
+
+/*
+═════     9. OUTPUT     ═════
+*/
+
+Console.WriteLine($"═════     1. CURRENT GENERAL INFORMATION     ═════");
+
+Console.Write($"\n1.1    Auditor:           {modelAuditor}");
+Console.Write($"\n1.2    Project Number:    {projectNumber}");
+Console.Write($"\n1.3    Project Name:      {projectName}");
+Console.Write($"\n1.4    BIM Lead:          {AAI_BIMLead}");
+Console.Write($"\n1.5    Project Lead:      {projectLead}");
+Console.Write($"\n1.6    Model Analysed:    {currentDate}");
+Console.Write($"\n1.7    Model Name:        {modelName}");
+Console.Write($"\n1.8    File Size:         {mb:F2} MB");
+Console.Write($"\n1.9    Issue Date:        {currentDate}");
+Console.Write($"\n1.10   Audit Score: ");
 
