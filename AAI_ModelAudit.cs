@@ -82,3 +82,86 @@ The purpose of this script is to:
 ═══   4.13 WORKSETS   ═══
 
 */
+
+/*
+═════     5. FAMILIES     ═════
+
+═══   5.1 FT CONTENT   ═══
+
+═══   5.2 GENERIC MODELS   ═══
+
+═══   5.3 MODEL IN-PLACE   ═══
+
+═══   5.4 SHARED PARAMETERS   ═══
+
+═══   5.5 LARGEST FAMILY SIZE   ═══
+
+*/
+
+/*
+═════     6. PERFORMANCE     ═════
+
+═══   6.1 AREAS   ═══
+
+═══   6.2 DESIGN OPTIONS   ═══
+
+═══   6.3 DESIGN OPTION SETS   ═══
+
+═══   6.4 DETAIL GROUPS   ═══
+
+═══   6.5 DETAIL ITEMS   ═══
+
+═══   6.6 DETAIL LINES   ═══
+
+═══   6.7 DWG IMPORTED   ═══
+
+═══   6.8 FILTERS   ═══
+
+═══   6.9 GRIDS   ═══
+
+═══   6.10 IMAGES   ═══
+
+═══   6.11 LEVELS   ═══
+
+═══   6.12 LOADABLE FAMILIES   ═══
+
+═══   6.13 MODEL GROUPS   ═══
+
+═══   6.14 MODEL HEALTH   ═══
+
+═══   6.15 MODEL LINES   ═══
+
+═══   6.16 PURGE ELEMENTS   ═══
+
+═══   6.17 REFERENCE PLANES   ═══
+
+═══   6.18 ROOMS   ═══
+
+═══   6.19 SCHEDULES   ═══
+
+═══   6.20 SCOPE BOXES   ═══
+
+═══   6.21 SHEETS   ═══
+
+═══   6.22 TAGS   ═══
+
+═══   6.23 TEXT NOTES   ═══
+
+═══   6.24 VIEW TEMPLATES   ═══
+
+═══   6.25 VIEWS   ═══
+
+═══   6.26 VIEWS ON SHEETS   ═══
+
+═══   6.27 WARNINGS   ═══
+
+*/
+
+/*
+═════     7. CONCLUSION     ═════
+*/
+
+/*
+═════     8. NAMING CONVENTION     ═════
+*/
+
