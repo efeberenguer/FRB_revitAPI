@@ -51,3 +51,34 @@ The purpose of this script is to:
 ═════     3. KNOWN ISSUES     ═════
 
 */
+
+/*
+═════     4. AAI STANDARDS     ═════
+
+═══   4.1 LINKED DWG   ═══
+
+═══   4.2 FILLED REGIONS   ═══
+
+═══   4.3 LINE PATTERNS   ═══
+
+═══   4.4 LINE STYLES   ═══
+
+═══   4.5 MATERIALS   ═══
+
+═══   4.6 NAMING CONVENTION   ═══
+
+═══   4.7 OBJECT STYLES   ═══
+
+═══   4.8 PHASES   ═══
+
+═══   4.9 PROJECT BROWSER   ═══
+
+═══   4.10 LINKED RVT   ═══
+
+═══   4.11 REVISIONS   ═══
+
+═══   4.12 SHEET ISSUED REVISIONS   ═══
+
+═══   4.13 WORKSETS   ═══
+
+*/
