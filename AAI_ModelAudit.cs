@@ -1,5 +1,5 @@
 /*
-═════     PURPOSE     ═════
+═══════════════════════════════════ PURPOSE ════════════════════════════════════
 
 The purpose of this script is to:
 - Extract the audit data from the working models
@@ -8,17 +8,17 @@ The purpose of this script is to:
 */
 
 /*
-═════     1. GENERAL INFORMATION     ═════
+════════════════════════════ 1. GENERAL INFORMATION ════════════════════════════
 
-═══   1.1 AUDITOR   ═══
+═════════════════════════════════ 1.1 AUDITOR ══════════════════════════════════
 
-═══   1.2 PROJECT NUMBER   ═══
+══════════════════════════════ 1.2 PROJECT NUMBER ══════════════════════════════
 
-═══   1.3 PROJECT NAME   ═══
+═══════════════════════════════ 1.3 PROJECT NAME ═══════════════════════════════
 
-═══   1.4 BIM LEAD   ═══
+═════════════════════════════════ 1.4 BIM LEAD ═════════════════════════════════
 
-═══   1.5 MODEL ANALYSED   ═══
+══════════════════════════════ 1.5 MODEL ANALYSED ══════════════════════════════
 
 ═══   1.6 MODEL NAME   ═══
 
