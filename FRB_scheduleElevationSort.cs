@@ -26,7 +26,7 @@ int doorsChanged = 0;
 
 using (Transaction t = new Transaction (doc, "Set door elevation parameter"))
 {
-	t.Start();
+	t2.Start();
 	
 	List<FamilyInstance> doors = new FilteredElementCollector(doc)
 		.OfCategory(BuiltInCategory.OST_Doors)
@@ -77,7 +77,7 @@ using (Transaction t = new Transaction (doc, "Set door elevation parameter"))
 				doorsChanged++;
 		}
 	}
-	t.Commit();
+	t2.Commit();
 }
 
 TaskDialog.Show(
