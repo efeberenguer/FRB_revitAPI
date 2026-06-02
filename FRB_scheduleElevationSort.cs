@@ -94,16 +94,16 @@ TaskDialog.Show(
 
 // ═══ STEP 3 - CLADDING DOORS ═══
 
-int extDoorsMissingParam = 0;
-int extDoorsReadOnly = 0;
-int extDoorsChanged = 0;
-int extDoorsPopulated = 0;
+int missingParamExtDoors = 0;
+int readOnlyExtDoors = 0;
+int changedExtDoors = 0;
+int populatedExtDoors = 0;
 
-// Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR_Int"
+// Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR"
 
-using (Transaction t3 = new Transaction (doc, "Set door elevation parameter"))
+using (Transaction tExtDoors = new Transaction (doc, "Set external doors elevation parameter"))
 {
-	t3.Start();
+	tExtDoors.Start();
 	
 	List<FamilyInstance> extDoors = new FilteredElementCollector(doc)
 		.OfCategory(BuiltInCategory.OST_Doors)
@@ -125,40 +125,41 @@ using (Transaction t3 = new Transaction (doc, "Set door elevation parameter"))
 	
 	foreach (var group in groupedExtDoors)
 	{
-		Level level = doc.GetElement(group.Key) as Level;
+		Level extDoorLevel = doc.GetElement(group.Key) as Level;
 		
-		if (level == null)
+		if (extDoorLevel == null)
 			continue;
 			
-		double levelElevationMetric = Math.Round((level.Elevation)*304.8);
-		//Console.WriteLine($"{levelName} - Elevation: {levelElevation}"); // test code to see that output values match expectations
+		double extDoorsLevelElevationMetric = Math.Round((extDoorLevel.Elevation)*304.8);
+		string extDoorsTargetValue = extDoorslevelElevationMetric.ToString();		
+
 		foreach (FamilyInstance door in group)
 		{
-			Parameter p = door.LookupParameter("AAI_LevelElevation");
+			Parameter extDoorsP = door.LookupParameter("AAI_LevelElevation");
 			
-			if (p == null)
+			if (extDoorsP == null)
 			{
 				extDoorsMissingParam++;
 				continue;			
 			}			
-			else if (p.IsReadOnly)
+			else if (extDoorsP.IsReadOnly)
 			{
 				extDoorsReadOnly++;
 				continue;
 			}
-			else if (p.AsString() == levelElevationMetric.ToString())
+			else if (string.Equals(extDoorsP.AsString()), extDoorsTargetValue)
 			{
 				extDoorsPopulated++;
 				continue;
 			}
 			else
 			{
-				p.Set(levelElevationMetric.ToString());
+				extDoorsP.Set(extDoorsLevelElevationMetric.ToString());
 				extDoorsChanged++;
 			}	
 		}
 	}
-	t3.Commit();
+	tExtDoors.Commit();
 }
 
 TaskDialog.Show(
