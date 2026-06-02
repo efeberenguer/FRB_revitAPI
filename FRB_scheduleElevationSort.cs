@@ -16,16 +16,16 @@ The parameter AAI_LevelElevationSort is a shared parameter to be applied to the 
 
 // ═══ STEP 2 - INTERNAL DOORS ═══
 
-int intDoorsMissingParam = 0;
-int intDoorsReadOnly = 0;
-int intDoorsChanged = 0;
-int intDoorsPopulated = 0;
+int missingParamIntDoors = 0;
+int readOnlyIntDoors = 0;
+int changedIntDoors = 0;
+int populatedIntDoors = 0;
 
-using (Transaction t2 = new Transaction (doc, "Set internal doors elevation parameter"))
+using (Transaction tIntDoors = new Transaction (doc, "Set internal doors elevation parameter"))
 {
-	t2.Start();
+	tIntDoors.Start();
 	
-	List<FamilyInstance> internalDoors = new FilteredElementCollector(doc)
+	List<FamilyInstance> intDoors = new FilteredElementCollector(doc)
 		.OfCategory(BuiltInCategory.OST_Doors)
 		.WhereElementIsNotElementType()
 		.Cast<FamilyInstance>()
@@ -35,62 +35,62 @@ using (Transaction t2 = new Transaction (doc, "Set internal doors elevation para
 		
 	TaskDialog.Show(
 		"DEBUG",
-		$"Internal Doors Found: {internalDoors.Count}");
+		$"Internal Doors Found: {intDoors.Count}");
 		
 	// The outputs of the filtered element collector are grouped by level
 	
-	var groupedDoors = internalDoors.GroupBy(d => d.LevelId);
+	var groupedIntDoors = intDoors.GroupBy(d => d.LevelId);
 	
 	// The doors are processed level by level
 	
-	foreach (var group in groupedDoors)
+	foreach (var group in groupedIntDoors)
 	{
-		Level internalDoorLevel = doc.GetElement(group.Key) as Level;
+		Level intDoorLevel = doc.GetElement(group.Key) as Level;
 		
-		if (internalDoorLevel == null)
+		if (intDoorLevel == null)
 			continue;
 			
 		// returns the elevation in mm
-		double internalDoorslevelElevationMetric = Math.Round((internalDoorLevel.Elevation)*304.8);
-		string internalDoorsTargetValue = internalDoorslevelElevationMetric.ToString();
+		double intDoorslevelElevationMetric = Math.Round((internalDoorLevel.Elevation)*304.8);
+		string intDoorsTargetValue = intDoorslevelElevationMetric.ToString();
 		
 		foreach (FamilyInstance door in group)
 		{
-			Parameter internalDoorsP = door.LookupParameter("AAI_LevelElevation");
+			Parameter intDoorsP = door.LookupParameter("AAI_LevelElevation");
 			
-			if (internalDoorsP == null)
+			if (intDoorsP == null)
 			{
-				intDoorsMissingParam++;
+				missingParamIntDoors++;
 				continue;			
 			}
 			
-			else if (internalDoorsP.IsReadOnly)
+			else if (intDoorsP.IsReadOnly)
 			{
-				intDoorsReadOnly++;
+				readOnlyIntDoors++;
 				continue;
 			}
 			
-			else if (string.Equals(internalDoorsP.AsString(), internalDoorsTargetValue))
+			else if (string.Equals(intDoorsP.AsString(), intDoorsTargetValue))
 			{
-				intDoorsPopulated++;
+				populatedIntDoors++;
 				continue;
 			}
 			else
 			{
-				internalDoorsP.Set(internalDoorsTargetValue);
-				intDoorsChanged++;
+				intDoorsP.Set(intDoorsTargetValue);
+				changedIntDoors++;
 			}				
 		}
 	}
-	t2.Commit();
+	tIntDoors.Commit();
 }
 
 TaskDialog.Show(
 	"Door Level Elevation Update Summary",
-	$"Missing Parameter: {intDoorsMissingParam}\n" +
-	$"Read Only: {intDoorsReadOnly}\n" +
-	$"Already Populated: {intDoorsPopulated}\n" +
-	$"Changed: {intDoorsChanged}");
+	$"Missing Parameter: {missingParamIntDoors}\n" +
+	$"Read Only: {readOnlyIntDoors}\n" +
+	$"Already Populated: {populatedIntDoors}\n" +
+	$"Changed: {changedIntDoors}");
 
 // ═══ STEP 3 - CLADDING DOORS ═══
 
@@ -115,7 +115,7 @@ using (Transaction t3 = new Transaction (doc, "Set door elevation parameter"))
 		
 	TaskDialog.Show(
 		"DEBUG",
-		$"Doors Found: {extDoors.Count}");
+		$"External Doors Found: {extDoors.Count}");
 		
 	// The outputs of the filtered element collector are grouped by level
 	
