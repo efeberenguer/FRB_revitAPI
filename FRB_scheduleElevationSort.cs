@@ -169,8 +169,6 @@ TaskDialog.Show(
 	$"Already Populated: {populatedExtDoors}\n" +
 	$"Changed: {changedExtDoors}");
 
-// ═══ STEP 5 - CLADDING WINDOWS ═══
-
 // ═══ STEP 5 - ROOMS ═══
 
 // ═══ STEP 6 - SPECIALTY EQUIPMENT ═══
