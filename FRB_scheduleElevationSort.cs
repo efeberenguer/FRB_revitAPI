@@ -131,7 +131,7 @@ using (Transaction tExtDoors = new Transaction (doc, "Set external doors elevati
 			continue;
 			
 		double extDoorsLevelElevationMetric = Math.Round((extDoorLevel.Elevation)*304.8);
-		string extDoorsTargetValue = extDoorslevelElevationMetric.ToString();		
+		string extDoorsTargetValue = extDoorsLevelElevationMetric.ToString();		
 
 		foreach (FamilyInstance door in group)
 		{
@@ -139,23 +139,23 @@ using (Transaction tExtDoors = new Transaction (doc, "Set external doors elevati
 			
 			if (extDoorsP == null)
 			{
-				extDoorsMissingParam++;
+				missingParamExtDoors++;
 				continue;			
 			}			
 			else if (extDoorsP.IsReadOnly)
 			{
-				extDoorsReadOnly++;
+				readOnlyExtDoors++;
 				continue;
 			}
-			else if (string.Equals(extDoorsP.AsString()), extDoorsTargetValue)
+			else if (string.Equals(extDoorsP.AsString(), extDoorsTargetValue))
 			{
-				extDoorsPopulated++;
+				populatedExtDoors++;
 				continue;
 			}
 			else
 			{
 				extDoorsP.Set(extDoorsLevelElevationMetric.ToString());
-				extDoorsChanged++;
+				changedExtDoors++;
 			}	
 		}
 	}
@@ -164,10 +164,10 @@ using (Transaction tExtDoors = new Transaction (doc, "Set external doors elevati
 
 TaskDialog.Show(
 	"External Doors Level Elevation Update Summary",
-	$"Missing Parameter: {extDoorsMissingParam}\n" +
-	$"Read Only: {extDoorsReadOnly}\n" +	
-	$"Already Populated: {extDoorsPopulated}\n" +
-	$"Changed: {extDoorsChanged}");
+	$"Missing Parameter: {missingParamExtDoors}\n" +
+	$"Read Only: {readOnlyExtDoors}\n" +	
+	$"Already Populated: {populatedExtDoors}\n" +
+	$"Changed: {changedExtDoors}");
 
 // ═══ STEP 5 - CLADDING WINDOWS ═══
 
