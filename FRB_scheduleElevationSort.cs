@@ -72,12 +72,12 @@ using (Transaction t2 = new Transaction (doc, "Set internal doors elevation para
 			
 			else if (string.Equals(internalDoorsP.AsString(), internalDoorsTargetValue))
 			{
-				doorsPopulated++;
+				intDoorsPopulated++;
 				continue;
 			}
 			else
 			{
-				p.Set(internalDoorsTargetValue);
+				internalDoorsP.Set(internalDoorsTargetValue);
 				intDoorsChanged++;
 			}				
 		}
