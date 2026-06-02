@@ -52,6 +52,7 @@ using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 			
 		// returns the elevation in mm
 		double levelElevationMetric = Math.Round((level.Elevation)*304.8);
+		string doorsTargetValue = levelElevationMetric.ToString();
 		
 		foreach (FamilyInstance door in group)
 		{
@@ -69,14 +70,14 @@ using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 				continue;
 			}
 			
-			else if (p.AsString() == levelElevationMetric.ToString())
+			else if (string.Equals(p.AsString(), targetValue))
 			{
 				doorsPopulated++;
 				continue;
 			}
 			else
 			{
-				p.Set(levelElevationMetric.ToString());
+				p.Set(targetValue);
 				doorsChanged++;
 			}				
 		}
