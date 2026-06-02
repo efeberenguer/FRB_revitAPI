@@ -24,7 +24,7 @@ int doorsChanged = 0;
 
 // Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR"
 
-using (Transaction t = new Transaction (doc, "Set door elevation parameter"))
+using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 {
 	t2.Start();
 	
