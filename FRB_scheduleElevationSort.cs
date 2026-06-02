@@ -51,7 +51,7 @@ using (Transaction tIntDoors = new Transaction (doc, "Set internal doors elevati
 			continue;
 			
 		// returns the elevation in mm
-		double intDoorslevelElevationMetric = Math.Round((internalDoorLevel.Elevation)*304.8);
+		double intDoorslevelElevationMetric = Math.Round((intDoorLevel.Elevation)*304.8);
 		string intDoorsTargetValue = intDoorslevelElevationMetric.ToString();
 		
 		foreach (FamilyInstance door in group)
