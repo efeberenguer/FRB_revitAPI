@@ -163,7 +163,8 @@ using (Transaction t3 = new Transaction (doc, "Set door elevation parameter"))
 TaskDialog.Show(
 	"External Doors Level Elevation Update Summary",
 	$"Missing Parameter: {extDoorsMissingParam}\n" +
-	$"Read Only: {extDoorsReadOnly}\n" +
+	$"Read Only: {extDoorsReadOnly}\n" +	
+	$"Already Populated: {extDoorsPopulated}\n" +
 	$"Updated: {extDoorsChanged}");
 
 // ═══ STEP 5 - CLADDING WINDOWS ═══
