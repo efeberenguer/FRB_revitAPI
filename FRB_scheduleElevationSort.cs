@@ -91,6 +91,8 @@ TaskDialog.Show(
 	$"Already Populated: {doorsPopulated}\n" +
 	$"Updated: {doorsChanged}");
 
+// ═══ STEP 3 - CLADDING DOORS ═══
+
 
 // Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR_Int"
 
