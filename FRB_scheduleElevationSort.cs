@@ -89,7 +89,7 @@ TaskDialog.Show(
 	$"Missing Parameter: {doorsMissingParam}\n" +
 	$"Read Only: {doorsReadOnly}\n" +
 	$"Already Populated: {doorsPopulated}\n" +
-	$"Updated: {doorsChanged}");
+	$"Changed: {doorsChanged}");
 
 // ═══ STEP 3 - CLADDING DOORS ═══
 
@@ -165,7 +165,7 @@ TaskDialog.Show(
 	$"Missing Parameter: {extDoorsMissingParam}\n" +
 	$"Read Only: {extDoorsReadOnly}\n" +	
 	$"Already Populated: {extDoorsPopulated}\n" +
-	$"Updated: {extDoorsChanged}");
+	$"Changed: {extDoorsChanged}");
 
 // ═══ STEP 5 - CLADDING WINDOWS ═══
 
