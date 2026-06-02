@@ -16,13 +16,10 @@ The parameter AAI_LevelElevationSort is a shared parameter to be applied to the 
 
 // ═══ STEP 2 - INTERNAL DOORS ═══
 
-
 int doorsMissingParam = 0;
 int doorsReadOnly = 0;
 int doorsChanged = 0;
-
-
-// Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR"
+int doorsPopulated = 0;
 
 using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 {
@@ -53,8 +50,9 @@ using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 		if (level == null)
 			continue;
 			
+		// returns the elevation in mm
 		double levelElevationMetric = Math.Round((level.Elevation)*304.8);
-		//Console.WriteLine($"{levelName} - Elevation: {levelElevation}"); // test code to see that output values match expectations
+		
 		foreach (FamilyInstance door in group)
 		{
 			Parameter p = door.LookupParameter("AAI_LevelElevation");
@@ -65,16 +63,22 @@ using (Transaction t2 = new Transaction (doc, "Set door elevation parameter"))
 				continue;			
 			}
 			
-			if (p.IsReadOnly)
+			else if (p.IsReadOnly)
 			{
 				doorsReadOnly++;
 				continue;
 			}
 			
-			bool result = p.Set(levelElevationMetric.ToString());
-			
-			if (result)
+			else if (p.AsString() == levelElevationMetric.ToString())
+			{
+				doorsPopulated++;
+				continue;
+			}
+			else
+			{
+				p.Set(levelElevationMetric.ToString());
 				doorsChanged++;
+			}				
 		}
 	}
 	t2.Commit();
@@ -84,14 +88,8 @@ TaskDialog.Show(
 	"Door Level Elevation Update Summary",
 	$"Missing Parameter: {doorsMissingParam}\n" +
 	$"Read Only: {doorsReadOnly}\n" +
+	$"Already Populated: {doorsPopulated}\n" +
 	$"Updated: {doorsChanged}");
-	
-
-// ═══ STEP 3 - CLADDING DOORS ═══
-
-int extDoorsMissingParam = 0;
-int extDoorsReadOnly = 0;
-int extDoorsChanged = 0;
 
 
 // Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR_Int"
