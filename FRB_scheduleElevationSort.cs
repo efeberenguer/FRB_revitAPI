@@ -93,6 +93,10 @@ TaskDialog.Show(
 
 // ═══ STEP 3 - CLADDING DOORS ═══
 
+int extDoorsMissingParam = 0;
+int extDoorsReadOnly = 0;
+int extDoorsChanged = 0;
+int extDoorsPopulated = 0;
 
 // Filtered element collector to output all door instances that belong to a type that begins with "AAI_DOR_Int"
 
@@ -135,18 +139,22 @@ using (Transaction t3 = new Transaction (doc, "Set door elevation parameter"))
 			{
 				extDoorsMissingParam++;
 				continue;			
-			}
-			
-			if (p.IsReadOnly)
+			}			
+			else if (p.IsReadOnly)
 			{
 				extDoorsReadOnly++;
 				continue;
 			}
-			
-			bool result = p.Set(levelElevationMetric.ToString());
-			
-			if (result)
+			else if (p.AsString() == levelElevationMetric.ToString())
+			{
+				extDoorsPopulated++;
+				continue;
+			}
+			else
+			{
+				p.Set(levelElevationMetric.ToString());
 				extDoorsChanged++;
+			}	
 		}
 	}
 	t3.Commit();
