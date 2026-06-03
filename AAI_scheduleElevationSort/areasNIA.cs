@@ -12,7 +12,7 @@ The parameter AAI_LevelElevationSort is a shared parameter to be applied to the 
 
 */
 
-// ═══ AREAS (GROSS INTERNAL AREA) ═══
+// ═══ AREAS (NET INTERNAL AREA) ═══
 
 // Set up variables for counting elements later
 
