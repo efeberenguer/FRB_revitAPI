@@ -79,7 +79,7 @@ using (Transaction tAreasGEA = new Transaction (doc, "Set GEA Areas elevation pa
 				readOnlyAreasGEA++;
 				continue;
 			}
-			else if (string.Equals(GEAAreaP.AsString(),areasGEATargetValue)
+			else if (string.Equals(GEAAreaP.AsString(),areasGEATargetValue))
 			{
 				populatedAreasGEA++;
 				continue;
