@@ -144,5 +144,5 @@ TaskDialog.Show(
 	$"Missing Parameter: {missingParamAreasGEA}\n" +
 	$"Read Only: {readOnlyAreasGEA}\n" +
 	$"Already Populated: {populatedAreasGEA}\n" +
-	$"Changed: {changedAreasGEA}");
+	$"Changed: {changedAreasGEA}\n" +
 	$"Failed {failedAreasGEA}");
