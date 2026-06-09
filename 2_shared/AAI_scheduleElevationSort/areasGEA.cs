@@ -20,10 +20,13 @@ int missingParamAreasGEA = 0;
 int readOnlyAreasGEA = 0;
 int changedAreasGEA = 0;
 int populatedAreasGEA = 0;
+int failedAreasGEA = 0;
 
 // set up transaction
 
-using (Transaction tAreasGEA = new Transaction (doc, "Set GEA Areas elevation parameter"))
+using (Transaction tAreasGEA = 
+	   new Transaction (doc, "Set GEA Areas elevation parameter"))
+	
 {
 	tAreasGEA.Start();
 	
@@ -65,52 +68,75 @@ using (Transaction tAreasGEA = new Transaction (doc, "Set GEA Areas elevation pa
 		
 		foreach (var group in groupedGEAAreas)
 		{
-			Level GEAAreaLevel = doc.GetElement(group.Key) as Level;
+			Level GEAAreaLevel = 
+				doc.GetElement(group.Key) as Level;
 			
 			if (GEAAreaLevel == null)
 				continue;
 				
 			// returns the elevation in mm
-			double areasGEALevelElevationMetric = Math.Round((GEAAreaLevel.Elevation)*304.8);
+			double areasGEALevelElevationMetric = 
+				Math.Round((GEAAreaLevel.Elevation)*304.8);
 			
 			// this second variable is used to avoid processing/modifying areas that already have the correct value
-			string areasGEATargetValue = areasGEALevelElevationMetric.ToString();
+			string areasGEATargetValue = 
+				areasGEALevelElevationMetric.ToString();
 			
 			foreach (Area GEAArea in group)
 			{
-				Parameter GEAAreaP = GEAArea.LookupParameter("AAI_LevelElevation");
-				
-				if (GEAAreaP == null)
+				try
 				{
-					missingParamAreasGEA++;
-					continue;
-				}
-				else if (GEAAreaP.IsReadOnly)
-				{
-					readOnlyAreasGEA++;
-					continue;
-				}
-				else if (string.Equals(GEAAreaP.AsString(),areasGEATargetValue))
-				{
-					populatedAreasGEA++;
-					continue;
-				}
-				else
-				{
+					Parameter GEAAreaP = 
+						GEAArea.LookupParameter("AAI_LevelElevation");
+					
+					if (GEAAreaP == null)
+					{
+						missingParamAreasGEA++;
+						continue;
+					}
+					
+					if (GEAAreaP.IsReadOnly)
+					{
+						readOnlyAreasGEA++;
+						continue;
+					}
+					
+					if (string.Equals(
+						GEAAreaP.AsString(),
+						areasGEATargetValue))
+					{
+						populatedAreasGEA++;
+						continue;
+					}
+
 					GEAAreaP.Set(areasGEATargetValue);
+					
 					changedAreasGEA++;
+				}
+				catch (Exception ex)
+				{
+					failedAreasGEA++;
+
+					Debug.WriteLine(
+						$"Failed Area Id: {GEAArea.Id.IntegerValue}");
+
+					Debug.WriteLine(ex.ToString());
+
+					// continue processing remaining areas
 				}
 			}
 		}
+
+		tAreasGEA.Commit();
 	}
 	
 	catch (Exception ex)
 	{
-	    TaskDialog.Show("ERROR", ex.ToString());
+	    tAreasGEA.RollBack();
+
+		TaskDialog.Show(
+			"ERROR", ex.ToString());
 	}
-		
-	
-	tAreasGEA.Commit();
 }
 
 TaskDialog.Show(
@@ -119,3 +145,4 @@ TaskDialog.Show(
 	$"Read Only: {readOnlyAreasGEA}\n" +
 	$"Already Populated: {populatedAreasGEA}\n" +
 	$"Changed: {changedAreasGEA}");
+	$"Failed {failedAreasGEA}");
