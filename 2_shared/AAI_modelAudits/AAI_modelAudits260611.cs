@@ -70,7 +70,7 @@ FormResult BIMLeadForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, fo
                                            
 if (BIMLeadForm.Success)
 {
-	BIMLead = BIMLeadForm.GetStringResult("Enter BIM Lead name and surname");
+	BIMLead = BIMLeadForm.GetStringResult("Enter BIM Lead name and surname:");
 	Console.WriteLine($"BIM LEAD: {BIMLead}");
 }
 else
