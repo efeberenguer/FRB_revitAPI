@@ -195,4 +195,4 @@ Console.WriteLine($"\n1 GENERAL INFORMATION");
 
 Console.WriteLine(auditorOutput);
 
-Console.WriteLine($"\n1.2 Project Number: {projectNumber}");
+Console.WriteLine(projectNumberOutput);
