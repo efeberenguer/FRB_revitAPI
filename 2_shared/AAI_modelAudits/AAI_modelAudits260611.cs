@@ -4,8 +4,8 @@
 The purpose of this script is to automate the extraction and analysis of data from RVT model audits.
 
 The script is structured in two parts:
-- The first one collects the data, either via user input or from the RVT model.
-- The second one provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
+- The first part collects the data, either via user input or from the RVT model.
+- The second part provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
 // ══════════ DATA EXTRACTION AND PROCESSING
