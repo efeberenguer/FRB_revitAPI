@@ -186,7 +186,4 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
-string modelAuditorOutput = "\n 1.1 AUDITOR" +
-	$"\n Model Auditor: {modelAuditor}");
-
-Console.WriteLine(${modelAuditorOutput});
+Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}");
