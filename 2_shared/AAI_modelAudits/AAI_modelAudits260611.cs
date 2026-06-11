@@ -44,11 +44,8 @@ string auditorOutput = $"\n1.1 Model Auditor: {modelAuditor}";
 
 // ═════ 1.2 PROJECT NUMBER
 
-string projectNumber = "";
-
 ProjectInfo projectInfo = doc.ProjectInformation;
-
-projectNumber = projectInfo.Number;
+string projectNumber = projectInfo.Number;
 
 if (projectNumber == null)
 	{
