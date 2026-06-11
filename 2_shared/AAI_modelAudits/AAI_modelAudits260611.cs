@@ -26,4 +26,50 @@ The purpose of this script is to automate the extraction and analysis of data fr
 
 // ═ 1.9 ISSUE DATE ═
 
+// ═══ 2 INFORMATION ═══
+
+// ═ 2.1 SPLASH SCREEN & MODEL INFORMATION ═
+
+// ═ 2.2 REVIT VERSION ═
+
+// ═ 2.3 AUTODESK DESKTOP CONNECTOR VERSION ═
+
+// ═ 2.4 COORDINATES ═
+
+// ═ 2.5 COPY MONITOR ═
+
+// ═ 2.6 PUBLISHED SETS ═
+
+// ═══ 3 KNOWN ISSUES ═══
+
+// ═══ 4 AAI STANDARDS ═══
+
+// ═ 4.1 DWG LINKED ═
+
+// ═ 4.2 FILLED REGIONS ═
+
+// ═ 4.3 LINE PATTERNS ═
+
+// ═ 4.4 LINE STYLES ═
+
+// ═ 4.5 MATERIALS ═
+
+// ═ 4.6 NAMING CONVENTION ═
+
+// ═ 4.7 OBJECT STYLES ═
+
+// ═ 4.8 PHASES ═
+
+// ═ 4.9 PROJECT BROWSER ═
+
+// ═ 4.10 REVIT LINKS ═
+
+// ═ 4.11 REVISIONS ═
+
+// ═ 4.12 SHEET ISSUED REVISIONS ═
+
+// ═ 4.13 WORKSETS ═
+
 // ═════ AUDIT OUTPUT ═════
+
+
