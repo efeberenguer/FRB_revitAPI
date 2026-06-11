@@ -110,8 +110,8 @@ string AAI_ModelDescriptionOutput = $"\n1.6 Model Description: {AAI_ModelDescrip
 
 // ═════ 1.7 FILE NAME
 
-string projectName = doc.Title;
-string projectNameOutput = $"\n1.7 Model Name: {projectName}";
+string modelName = doc.Title;
+string modelNameOutput = $"\n1.7 Model Name: {modelName}";
 
 // ═════ 1.8 FILE SIZE
 
