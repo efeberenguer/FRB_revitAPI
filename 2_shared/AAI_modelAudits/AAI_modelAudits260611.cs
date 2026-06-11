@@ -110,6 +110,9 @@ string AAI_ModelDescriptionOutput = $"\n1.6 Model Description: {AAI_ModelDescrip
 
 // ═════ 1.7 FILE NAME
 
+string projectName = doc.Title;
+string projectNameOutput = $"\n1.7 Model Name: {projectName}";
+
 // ═════ 1.8 FILE SIZE
 
 // ═════ 1.9 ISSUE DATE
@@ -247,3 +250,5 @@ Console.WriteLine(BIMLeadOutput);
 Console.WriteLine(projectLeadOutput);
 
 Console.WriteLine(AAI_ModelDescriptionOutput);
+
+Console.WriteLine(projectNameOutput);
