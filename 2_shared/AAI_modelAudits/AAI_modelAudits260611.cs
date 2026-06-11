@@ -102,7 +102,11 @@ else
 
 string projectLeadOutput = $"\n1.5 Project Lead: {projectLead}";
 
-// ═════ 1.6 MODEL ANALISED
+// ═════ 1.6 MODEL DESCRIPTION
+
+Parameter AAI_ModelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
+string AAI_ModelDescription = AAI_ModelDescriptionParam.AsString();
+string AAI_ModelDescriptionOutput = $"\n1.6 Model Description: {AAI_ModelDescription}";
 
 // ═════ 1.7 FILE NAME
 
@@ -241,3 +245,5 @@ Console.WriteLine(projectNameOutput);
 Console.WriteLine(BIMLeadOutput);
 
 Console.WriteLine(projectLeadOutput);
+
+Console.WriteLine(AAI_ModelDescriptionOutput);
