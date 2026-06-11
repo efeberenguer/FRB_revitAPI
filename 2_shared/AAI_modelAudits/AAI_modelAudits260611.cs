@@ -8,10 +8,6 @@ The script is structured in two parts:
 - The second one provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
-// ══════════ VARIABLES
-
-
-
 // ══════════ DATA EXTRACTION AND PROCESSING
 
 // ═══════ 1 GENERAL INFORMATION
