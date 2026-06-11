@@ -115,6 +115,28 @@ string projectNameOutput = $"\n1.7 Model Name: {projectName}";
 
 // ═════ 1.8 FILE SIZE
 
+string fileSizeText = "";
+double fileSize = 0;
+
+FormResult fileSizeForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
+                                           {
+                                             form.AddHeader("General Information");
+                                             form.AddTextInput("Enter file size (MB):", "");
+                                           });
+                                           
+if (fileSizeForm.Success)
+{
+	fileSizeText = fileSizeForm.GetStringResult("Enter file size (MB):");
+	fileSize = double.Parse(fileSizeText);
+	Console.WriteLine($"FILE SIZE: {fileSize}");
+}
+else
+{
+	Console.WriteLine("File size input cancelled by the user");
+}
+
+string fileSizeOutput = $"\n1.8/ File Size: {fileSize:N1}";
+
 // ═════ 1.9 ISSUE DATE
 
 // ═══════ 2 INFORMATION
@@ -252,3 +274,5 @@ Console.WriteLine(projectLeadOutput);
 Console.WriteLine(AAI_ModelDescriptionOutput);
 
 Console.WriteLine(projectNameOutput);
+
+Console.WriteLine(fileSizeOutput);
