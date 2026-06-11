@@ -135,9 +135,15 @@ else
 	Console.WriteLine("File size input cancelled by the user");
 }
 
-string fileSizeOutput = $"\n1.8/ File Size: {fileSize:N1}";
+string fileSizeOutput = $"\n1.8 File Size: {fileSize:N1}";
 
 // ═════ 1.9 ISSUE DATE
+
+DateTime today = DateTime.Today; // Returns the current date
+string YYYY = today.ToString("yyyy");
+string MM = today.ToString("MM");
+string DD = today.ToString("dd");
+string auditDateOutput = $"\n1.9 Issue Date: {YYYY}-{MM}-{DD}";
 
 // ═══════ 2 INFORMATION
 
@@ -261,18 +267,11 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
-Console.WriteLine(modelAuditorOutput);
-
-Console.WriteLine(projectNumberOutput);
-
-Console.WriteLine(projectNameOutput);
-
-Console.WriteLine(BIMLeadOutput);
-
-Console.WriteLine(projectLeadOutput);
-
-Console.WriteLine(AAI_ModelDescriptionOutput);
-
-Console.WriteLine(projectNameOutput);
-
-Console.WriteLine(fileSizeOutput);
+Console.WriteLine($"{modelAuditorOutput}" +
+				 $"{projectNumberOutput}" +
+				  $"{projectNameOutput}" +
+				  $"{BIMLeadOutput}" +
+				  $"{projectLeadOutput}" +
+				  $"{AAI_ModelDescriptionOutput}" +
+				  $"{fileSizeOutput}" +
+				  $"{auditDateOutput}");
