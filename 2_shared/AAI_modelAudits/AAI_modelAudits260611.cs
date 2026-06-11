@@ -1,7 +1,11 @@
 // ══════════ PURPOSE
 
 /* 
-The purpose of this script is to automate the extraction and analysis of data from model audits.
+The purpose of this script is to automate the extraction and analysis of data from RVT model audits.
+
+The script is structured in two parts:
+- The first one collects the data, either via user input or from the RVT model.
+- The second one provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
 // ══════════ DATA EXTRACTION AND PROCESSING
@@ -9,6 +13,26 @@ The purpose of this script is to automate the extraction and analysis of data fr
 // ═══════ 1 GENERAL INFORMATION
 
 // ═════ 1.1 AUDITOR
+
+/* 
+The person auditing the model, which doesn't necessarily need to be the project BIM Coordinator.
+*/
+
+FormResult modelAuditorForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
+                                           {
+                                             form.AddHeader("General Information");
+                                             form.AddTextInput("Enter model auditor name and surname:", "");
+                                           });
+                                           
+if (modelAuditorForm.Success)
+{
+	string modelAuditor = modelAuditorForm.GetStringResult("Enter model auditor name and surname:");
+	Console.WriteLine($"{modelAuditor}");
+}
+else
+{
+	Console.WriteLine("Input cancelled by the user");
+}
 
 // ═════ 1.2 PROJECT NUMBER
 
