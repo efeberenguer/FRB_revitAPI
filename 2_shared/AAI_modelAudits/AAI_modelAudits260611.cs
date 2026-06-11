@@ -18,10 +18,6 @@ The script is structured in two parts:
 
 // ═════ 1.1 AUDITOR
 
-/* 
-The person auditing the model, which doesn't necessarily need to be the project BIM Coordinator.
-*/
-
 string modelAuditor = "";
 string modelAuditorOutput = "";
 
@@ -55,6 +51,15 @@ if (projectNumber == null)
 string projectNumberOutput = $"\n1.2 Project Number: {projectNumber}";
 
 // ═════ 1.3 PROJECT NAME
+
+string projectName = projectInfo.Name;
+
+if (projectName == null)
+	{
+		return null;
+	}
+
+string projectNameOutput = $"\n1.3 Project Name: {projectName}";
 
 // ═════ 1.4 BIM LEAD
 
@@ -193,3 +198,5 @@ Console.WriteLine($"\n1 GENERAL INFORMATION");
 Console.WriteLine(auditorOutput);
 
 Console.WriteLine(projectNumberOutput);
+
+Console.WriteLine(projectNameOutput);
