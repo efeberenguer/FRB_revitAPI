@@ -82,6 +82,26 @@ string BIMLeadOutput = $"\n1.4 BIM Lead: {BIMLead}";
 // ═════ 1.5 PROJECT LEAD
 // SUGGESTION: Turn into shared project parameter
 
+string projectLead = "";
+
+FormResult projectLeadForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
+                                           {
+                                             form.AddHeader("General Information");
+                                             form.AddTextInput("Enter Project Lead name and surname:", "");
+                                           });
+                                           
+if (projectLeadForm.Success)
+{
+	projectLead = projectLeadForm.GetStringResult("Enter Project Lead name and surname:");
+	Console.WriteLine($"PROJECT LEAD: {projectLead}");
+}
+else
+{
+	Console.WriteLine("Project Lead input cancelled by the user");
+}
+
+string projectLeadOutput = $"\n1.5 Project Lead: {projectLead}";
+
 // ═════ 1.6 MODEL ANALISED
 
 // ═════ 1.7 FILE NAME
@@ -219,3 +239,5 @@ Console.WriteLine(projectNumberOutput);
 Console.WriteLine(projectNameOutput);
 
 Console.WriteLine(BIMLeadOutput);
+
+Console.WriteLine(projectLeadOutput);
