@@ -36,6 +36,15 @@ else
 
 // ═════ 1.2 PROJECT NUMBER
 
+ProjectInfo projectInfo = doc.ProjectInformation;
+
+string projectNumber = projectInfo.Number;
+
+if (projectNumber == null)
+	{
+		return null;
+	}
+
 // ═════ 1.3 PROJECT NAME
 
 // ═════ 1.4 BIM LEAD
@@ -168,4 +177,10 @@ else
 
 // ══════════ AUDIT OUTPUT
 
+Console.WriteLine($"AAI MODEL AUDIT\n\n");
 
+string generalInformation = "1 GENERAL INFORMATION" +
+	"\n 1.1 AUDITOR" +
+	$"\n Model Auditor: {modelAuditor}");
+
+Console.WriteLine(${generalInformation});
