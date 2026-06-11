@@ -10,8 +10,7 @@ The script is structured in two parts:
 
 // ══════════ VARIABLES
 
-string modelAuditor = "";
-string modelAuditorOutput = "";
+
 
 // ══════════ DATA EXTRACTION AND PROCESSING
 
@@ -22,6 +21,9 @@ string modelAuditorOutput = "";
 /* 
 The person auditing the model, which doesn't necessarily need to be the project BIM Coordinator.
 */
+
+string modelAuditor = "";
+string modelAuditorOutput = "";
 
 FormResult modelAuditorForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
                                            {
@@ -38,17 +40,22 @@ else
 {
 	Console.WriteLine("Model auditor input cancelled by the user");
 }
+string auditorOutput = $"\n1.1 Model Auditor: {modelAuditor}";
 
 // ═════ 1.2 PROJECT NUMBER
 
+string projectNumber = "";
+
 ProjectInfo projectInfo = doc.ProjectInformation;
 
-string projectNumber = projectInfo.Number;
+projectNumber = projectInfo.Number;
 
 if (projectNumber == null)
 	{
 		return null;
 	}
+
+string projectNumberOutput = $"\n1.2 Project Number: {projectNumber}";
 
 // ═════ 1.3 PROJECT NAME
 
@@ -186,4 +193,6 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
-Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}");
+Console.WriteLine(auditorOutput);
+
+Console.WriteLine($"\n1.2 Project Number: {projectNumber}");
