@@ -8,6 +8,11 @@ The script is structured in two parts:
 - The second one provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
+// ══════════ VARIABLES
+
+string modelAuditor = "";
+string modelAuditorOutput = "";
+
 // ══════════ DATA EXTRACTION AND PROCESSING
 
 // ═══════ 1 GENERAL INFORMATION
@@ -26,12 +31,12 @@ FormResult modelAuditorForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 25
                                            
 if (modelAuditorForm.Success)
 {
-	string modelAuditor = modelAuditorForm.GetStringResult("Enter model auditor name and surname:");
-	Console.WriteLine($"{modelAuditor}");
+	modelAuditor = modelAuditorForm.GetStringResult("Enter model auditor name and surname:");
+	Console.WriteLine($"Model Auditor: {modelAuditor}");
 }
 else
 {
-	Console.WriteLine("Input cancelled by the user");
+	Console.WriteLine("Model auditor input cancelled by the user");
 }
 
 // ═════ 1.2 PROJECT NUMBER
@@ -177,10 +182,11 @@ if (projectNumber == null)
 
 // ══════════ AUDIT OUTPUT
 
-Console.WriteLine($"AAI MODEL AUDIT\n\n");
+Console.WriteLine($"AAI MODEL AUDIT");
 
-string generalInformation = "1 GENERAL INFORMATION" +
-	"\n 1.1 AUDITOR" +
+Console.WriteLine($"\n1 GENERAL INFORMATION");
+
+string modelAuditorOutput = "\n 1.1 AUDITOR" +
 	$"\n Model Auditor: {modelAuditor}");
 
-Console.WriteLine(${generalInformation});
+Console.WriteLine(${modelAuditorOutput});
