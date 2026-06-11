@@ -13,9 +13,9 @@ The script is structured in two parts:
 // ═══════ 1 GENERAL INFORMATION
 
 // ═════ 1.1 AUDITOR
+// SUGGESTION: Turn into shared project parameter
 
 string modelAuditor = "";
-string modelAuditorOutput = "";
 
 FormResult modelAuditorForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
                                            {
@@ -32,7 +32,7 @@ else
 {
 	Console.WriteLine("Model auditor input cancelled by the user");
 }
-string auditorOutput = $"\n1.1 Model Auditor: {modelAuditor}";
+string modelAuditorOutput = $"\n1.1 Model Auditor: {modelAuditor}";
 
 // ═════ 1.2 PROJECT NUMBER
 
@@ -58,8 +58,29 @@ if (projectName == null)
 string projectNameOutput = $"\n1.3 Project Name: {projectName}";
 
 // ═════ 1.4 BIM LEAD
+// SUGGESTION: Turn into shared project parameter
+
+string BIMLead = "";
+
+FormResult BIMLeadForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
+                                           {
+                                             form.AddHeader("General Information");
+                                             form.AddTextInput("Enter BIM Lead name and surname:", "");
+                                           });
+                                           
+if (BIMLeadForm.Success)
+{
+	BIMLead = BIMLeadForm.GetStringResult("Enter BIM Lead name and surname");
+	Console.WriteLine($"BIM LEAD: {BIMLead}");
+}
+else
+{
+	Console.WriteLine("BIM Lead input cancelled by the user");
+}
+string BIMLeadOutput = $"\n1.4 BIM Lead: {BIMLead}";
 
 // ═════ 1.5 PROJECT LEAD
+// SUGGESTION: Turn into shared project parameter
 
 // ═════ 1.6 MODEL ANALISED
 
@@ -191,8 +212,10 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
-Console.WriteLine(auditorOutput);
+Console.WriteLine(modelAuditorOutput);
 
 Console.WriteLine(projectNumberOutput);
 
 Console.WriteLine(projectNameOutput);
+
+Console.WriteLine(BIMLeadOutput);
