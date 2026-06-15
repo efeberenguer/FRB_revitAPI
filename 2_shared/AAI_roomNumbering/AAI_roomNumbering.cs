@@ -15,7 +15,7 @@ This script works by adding the rooms to different filtered element collectors u
     - Lifting Platform: 	LP
     - Passenger Lift: 		PL
     - Stair Lift: 			SL
-- All other room types: 	"null"
+- All other room types: 	ROOM
 */
 
 // ═══ STEP 1 - RISERS ═══
