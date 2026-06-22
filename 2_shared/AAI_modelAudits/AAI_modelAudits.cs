@@ -287,31 +287,31 @@ Console.WriteLine($"\n5.1 FT Content: " +
 Console.WriteLine($"\n6 PERFORMANCE");
 
 Console.WriteLine($"\n6.1 Areas: " +
-				  $"\n6.2 XXX:  " +
-				  $"\n6.3 XXX:  " +
-				  $"\n6.4 XXX:  " +
-				  $"\n6.5 XXX:  " +
-				  $"\n6.6 XXX:  " +
-				  $"\n6.7 XXX:  " +
-				  $"\n6.8 XXX:  " +
-				  $"\n6.9 XXX:  " +
-				  $"\n6.10 XXX:  " +
-				  $"\n6.11 XXX:  " +
-				  $"\n6.12 XXX:  " +
-				  $"\n6.13 XXX:  " +
-				  $"\n6.14 XXX:  " +
-				  $"\n6.15 XXX:  " +
-				  $"\n6.16 XXX:  " +
-				  $"\n6.17 XXX:  " +
-				  $"\n6.18 XXX:  " +
-				  $"\n6.19 XXX:  " +
-				  $"\n6.20 XXX:  " +
-				  $"\n6.21 XXX:  " +
-				  $"\n6.22 XXX:  " +
-				  $"\n6.23 XXX:  " +
-				  $"\n6.24 XXX:  " +
-				  $"\n6.25 XXX:  " +
-				  $"\n6.26 XXX:  " +
-				  $"\n6.27 Largest Family Size: ");
+				  $"\n6.2 Design Options:  " +
+				  $"\n6.3 Design Option Sets:  " +
+				  $"\n6.4 Detail Groups:  " +
+				  $"\n6.5 Detail Items:  " +
+				  $"\n6.6 Detail Lines:  " +
+				  $"\n6.7 DWG Imported:  " +
+				  $"\n6.8 Filters:  " +
+				  $"\n6.9 Grids:  " +
+				  $"\n6.10 Images:  " +
+				  $"\n6.11 Levels:  " +
+				  $"\n6.12 Loadable Families:  " +
+				  $"\n6.13 Model Groups:  " +
+				  $"\n6.14 Model Health:  " +
+				  $"\n6.15 Model Lines:  " +
+				  $"\n6.16 Purge Elements:  " +
+				  $"\n6.17 Reference Planes:  " +
+				  $"\n6.18 Rooms:  " +
+				  $"\n6.19 Schedules:  " +
+				  $"\n6.20 Scope Boxes:  " +
+				  $"\n6.21 Sheets:  " +
+				  $"\n6.22 Tags:  " +
+				  $"\n6.23 Text Notes:  " +
+				  $"\n6.24 View Templates:  " +
+				  $"\n6.25 Views:  " +
+				  $"\n6.26 Views on sheets:  " +
+				  $"\n6.27 Warnings: ");
 
 Console.WriteLine($"\n7 CONCLUSION");
