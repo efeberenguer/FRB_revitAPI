@@ -31,15 +31,12 @@ else
 
 // ═════ 1.2 PROJECT NUMBER
 
-ProjectInfo projectInfo = doc.ProjectInformation;
 string projectNumber = projectInfo.Number;
 
-if (projectNumber == null)
-	{
-		return null;
-	}
-
-string projectNumberOutput = $"\n1.2 Project Number: {projectNumber}";
+if (string.IsNullOrWhiteSpace(projectNumber))
+{
+	projectNumber = "Not Defined (Project Number is Empty)";
+}
 
 // ═════ 1.3 PROJECT NAME
 
@@ -263,7 +260,7 @@ Console.WriteLine($"AAI MODEL AUDIT");
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
 Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" + 
-				  $"" +
+				  $"\n1.2 Project Number: {projectNumber}" +
 				 );
 
 Console.WriteLine($"{modelAuditorOutput}" +
