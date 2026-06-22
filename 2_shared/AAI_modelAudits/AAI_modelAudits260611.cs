@@ -13,26 +13,21 @@ The script is structured in two parts:
 // ═══════ 1 GENERAL INFORMATION
 
 // ═════ 1.1 AUDITOR
-// SUGGESTION: Turn into shared project parameter
 
-string modelAuditor = "";
+ProjectInfo projectInfo = doc.ProjectInformation;
 
-FormResult modelAuditorForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
-                                           {
-                                             form.AddHeader("General Information");
-                                             form.AddTextInput("Enter model auditor name and surname:", "");
-                                           });
-                                           
-if (modelAuditorForm.Success)
+Parameter AAI_ModelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
+
+string modelAuditor;
+
+if (AAI_ModelAuditorParam == null)
 {
-	modelAuditor = modelAuditorForm.GetStringResult("Enter model auditor name and surname:");
-	Console.WriteLine($"Model Auditor: {modelAuditor}");
+    modelAuditor = "Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
 }
 else
 {
-	Console.WriteLine("Model auditor input cancelled by the user");
+    modelAuditor = AAI_ModelAuditorParam.AsString();
 }
-string modelAuditorOutput = $"\n1.1 Model Auditor: {modelAuditor}";
 
 // ═════ 1.2 PROJECT NUMBER
 
