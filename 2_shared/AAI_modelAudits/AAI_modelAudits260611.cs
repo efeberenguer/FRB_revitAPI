@@ -14,7 +14,7 @@ The script is structured in two parts:
 
 // ═════ 1.1 AUDITOR
 
-ProjectInfo projectInfo = doc.ProjectInformation;
+ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
 Parameter AAI_ModelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
 
