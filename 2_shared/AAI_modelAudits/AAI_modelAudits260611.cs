@@ -78,9 +78,18 @@ else
 
 // ═════ 1.6 MODEL DESCRIPTION
 
-Parameter AAI_ModelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
-string AAI_ModelDescription = AAI_ModelDescriptionParam.AsString();
-string AAI_ModelDescriptionOutput = $"\n1.6 Model Description: {AAI_ModelDescription}";
+Parameter modelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
+
+string modelDescription;
+
+if (modelDescriptionParam == null)
+{
+    modelDescription = "Not Defined (Missing Shared Parameter AAI_ModelDescription)";
+}
+else
+{
+    modelDescription = modelDescriptionParam.AsString();
+}
 
 // ═════ 1.7 FILE NAME
 
@@ -246,4 +255,5 @@ Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" +
 				  $"\n1.3 Project Name: {projectName}" +
 				  $"\n1.4 BIM Lead: {BIMLead}" +
 				  $"\n1.5 Project Lead: {projectLead}" +
+				  $"\n1.6 Model Description: {modelDescription}" +
 				 );
