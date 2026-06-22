@@ -44,7 +44,7 @@ string projectName = projectInfo.Name;
 
 if (string.IsNullOrWhiteSpace(projectName))
 {
-	projectNumber = "Not Defined (Project Name is Empty)";
+	projectName = "Not Defined (Project Name is Empty)";
 }
 
 // ═════ 1.4 BIM LEAD
@@ -107,7 +107,7 @@ if (fileSizeParam == null)
 }
 else
 {
-    fileSize = fileSizeParam.AsDouble().ToString();
+    fileSize = fileSizeParam.AsDouble().ToString() + "(MB)";
 }
 
 // ═════ 1.9 ISSUE DATE
@@ -239,13 +239,12 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
-Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" + 
-				  $"\n1.2 Project Number: {projectNumber}" +
-				  $"\n1.3 Project Name: {projectName}" +
-				  $"\n1.4 BIM Lead: {BIMLead}" +
-				  $"\n1.5 Project Lead: {projectLead}" +
-				  $"\n1.6 Model Description: {modelDescription}" +
-				  $"\n1.7 Model Name: {modelName}" +
-				  $"\n1.8 File Size: {fileSize} (MB)" +
-				  $"\n1.9 Issue Date: {YYYY}-{MM}-{DD}" +
-				 );
+Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
+				  $"\n1.2 Project Number:       {projectNumber}" +
+				  $"\n1.3 Project Name:         {projectName}" +
+				  $"\n1.4 BIM Lead:             {BIMLead}" +
+				  $"\n1.5 Project Lead:         {projectLead}" +
+				  $"\n1.6 Model Description:    {modelDescription}" +
+				  $"\n1.7 Model Name:           {modelName}" +
+				  $"\n1.8 File Size:            {fileSize}" +
+				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
