@@ -16,17 +16,17 @@ The script is structured in two parts:
 
 ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
-Parameter AAI_ModelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
+Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
 
 string modelAuditor;
 
-if (AAI_ModelAuditorParam == null)
+if (modelAuditorParam == null)
 {
     modelAuditor = "Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
 }
 else
 {
-    modelAuditor = AAI_ModelAuditorParam.AsString();
+    modelAuditor = modelAuditorParam.AsString();
 }
 
 // ═════ 1.2 PROJECT NUMBER
@@ -48,26 +48,19 @@ if (string.IsNullOrWhiteSpace(projectName))
 }
 
 // ═════ 1.4 BIM LEAD
-// SUGGESTION: Turn into shared project parameter
 
-string BIMLead = "";
+Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
-FormResult BIMLeadForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
-                                           {
-                                             form.AddHeader("General Information");
-                                             form.AddTextInput("Enter BIM Lead name and surname:", "");
-                                           });
-                                           
-if (BIMLeadForm.Success)
+string BIMLead;
+
+if (BIMLeadParam == null)
 {
-	BIMLead = BIMLeadForm.GetStringResult("Enter BIM Lead name and surname:");
-	Console.WriteLine($"BIM LEAD: {BIMLead}");
+    BIMLead = "Not Defined (Missing Shared Parameter AAI_BIMLead)";
 }
 else
 {
-	Console.WriteLine("BIM Lead input cancelled by the user");
+    BIMLead = BIMLeadParam.AsString();
 }
-string BIMLeadOutput = $"\n1.4 BIM Lead: {BIMLead}";
 
 // ═════ 1.5 PROJECT LEAD
 // SUGGESTION: Turn into shared project parameter
@@ -260,13 +253,5 @@ Console.WriteLine($"\n1 GENERAL INFORMATION");
 Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" + 
 				  $"\n1.2 Project Number: {projectNumber}" +
 				  $"\n1.3 Project Name: {projectName}" +
+				  $"\n1.4 BIM Lead: {BIMLead}" +
 				 );
-
-Console.WriteLine($"{modelAuditorOutput}" +
-				 $"{projectNumberOutput}" +
-				  $"{projectNameOutput}" +
-				  $"{BIMLeadOutput}" +
-				  $"{projectLeadOutput}" +
-				  $"{AAI_ModelDescriptionOutput}" +
-				  $"{fileSizeOutput}" +
-				  $"{auditDateOutput}");
