@@ -42,12 +42,10 @@ if (string.IsNullOrWhiteSpace(projectNumber))
 
 string projectName = projectInfo.Name;
 
-if (projectName == null)
-	{
-		return null;
-	}
-
-string projectNameOutput = $"\n1.3 Project Name: {projectName}";
+if (string.IsNullOrWhiteSpace(projectName))
+{
+	projectNumber = "Not Defined (Project Name is Empty)";
+}
 
 // ═════ 1.4 BIM LEAD
 // SUGGESTION: Turn into shared project parameter
@@ -261,6 +259,7 @@ Console.WriteLine($"\n1 GENERAL INFORMATION");
 
 Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" + 
 				  $"\n1.2 Project Number: {projectNumber}" +
+				  $"\n1.3 Project Name: {projectName}" +
 				 );
 
 Console.WriteLine($"{modelAuditorOutput}" +
