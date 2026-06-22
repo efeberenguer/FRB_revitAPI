@@ -63,27 +63,18 @@ else
 }
 
 // ═════ 1.5 PROJECT LEAD
-// SUGGESTION: Turn into shared project parameter
+Parameter projectLeadParam = projectInfo.LookupParameter("AAI_projectLead");
 
-string projectLead = "";
+string projectLead;
 
-FormResult projectLeadForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
-                                           {
-                                             form.AddHeader("General Information");
-                                             form.AddTextInput("Enter Project Lead name and surname:", "");
-                                           });
-                                           
-if (projectLeadForm.Success)
+if (projectLeadParam == null)
 {
-	projectLead = projectLeadForm.GetStringResult("Enter Project Lead name and surname:");
-	Console.WriteLine($"PROJECT LEAD: {projectLead}");
+    projectLead = "Not Defined (Missing Shared Parameter AAI_projectLead)";
 }
 else
 {
-	Console.WriteLine("Project Lead input cancelled by the user");
+    projectLead = projectLeadParam.AsString();
 }
-
-string projectLeadOutput = $"\n1.5 Project Lead: {projectLead}";
 
 // ═════ 1.6 MODEL DESCRIPTION
 
@@ -254,4 +245,5 @@ Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" +
 				  $"\n1.2 Project Number: {projectNumber}" +
 				  $"\n1.3 Project Name: {projectName}" +
 				  $"\n1.4 BIM Lead: {BIMLead}" +
+				  $"\n1.5 Project Lead: {projectLead}" +
 				 );
