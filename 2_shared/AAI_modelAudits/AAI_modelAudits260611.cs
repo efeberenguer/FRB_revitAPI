@@ -248,3 +248,12 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.7 Model Name:           {modelName}" +
 				  $"\n1.8 File Size:            {fileSize}" +
 				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
+
+Console.WriteLine($"\n2 INFORMATION");
+
+Console.WriteLine($"\n2.1 Splash Screen/Model Information:       " + 
+				  $"\n2.2 Revit Version:                         " +
+				  $"\n2.3 Autodesk Desktop Connector Version:    " +
+				  $"\n2.4 Coordinates:                           " +
+				  $"\n2.5 Copy Monitor:                          " +
+				  $"\n2.6 Published Sets:                        ");
