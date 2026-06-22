@@ -97,27 +97,18 @@ string modelName = doc.Title;
 
 // ═════ 1.8 FILE SIZE
 
-string fileSizeText = "";
-double fileSize = 0;
+Parameter fileSizeParam = projectInfo.LookupParameter("AAI_fileSize");
 
-FormResult fileSizeForm = UI.CreateCustomForm("AAI RVT Model Audit", 400, 250, form =>
-                                           {
-                                             form.AddHeader("General Information");
-                                             form.AddTextInput("Enter file size (MB):", "");
-                                           });
-                                           
-if (fileSizeForm.Success)
+string fileSize;
+
+if (fileSizeParam == null)
 {
-	fileSizeText = fileSizeForm.GetStringResult("Enter file size (MB):");
-	fileSize = double.Parse(fileSizeText);
-	Console.WriteLine($"FILE SIZE: {fileSize}");
+    fileSize = "Not Defined (Missing Shared Parameter AAI_fileSize)";
 }
 else
 {
-	Console.WriteLine("File size input cancelled by the user");
+    fileSize = fileSizeParam.AsDouble().ToString();
 }
-
-string fileSizeOutput = $"\n1.8 File Size: {fileSize:N1}";
 
 // ═════ 1.9 ISSUE DATE
 
@@ -125,7 +116,6 @@ DateTime today = DateTime.Today; // Returns the current date
 string YYYY = today.ToString("yyyy");
 string MM = today.ToString("MM");
 string DD = today.ToString("dd");
-string auditDateOutput = $"\n1.9 Issue Date: {YYYY}-{MM}-{DD}";
 
 // ═══════ 2 INFORMATION
 
@@ -256,4 +246,6 @@ Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" +
 				  $"\n1.5 Project Lead: {projectLead}" +
 				  $"\n1.6 Model Description: {modelDescription}" +
 				  $"\n1.7 Model Name: {modelName}" +
+				  $"\n1.8 File Size: {fileSize} (MB)" +
+				  $"\n1.9 Issue Date: {YYYY}-{MM}-{DD}" +
 				 );
