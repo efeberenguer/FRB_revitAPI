@@ -123,7 +123,33 @@ string DD = today.ToString("dd");
 
 // ═════ 2.2 REVIT VERSION
 
+Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
+
+string revitVersion;
+
+if (revitVersionParam == null)
+{
+    revitVersion = "Not Defined (Missing Shared Parameter AAI_RevitVersion)";
+}
+else
+{
+    revitVersion = revitVersionParam.AsString();
+}
+
 // ═════ 2.3 AUTODESK DESKTOP CONNECTOR VERSION
+
+Parameter AutodeskDesktopConnectorVersionParam = projectInfo.LookupParameter("AAI_AutodeskDesktopConnectorVersion");
+
+string AutodeskDesktopConnectorVersion;
+
+if (AutodeskDesktopConnectorVersionParam == null)
+{
+    AutodeskDesktopConnectorVersion = "Not Defined (Missing Shared Parameter AAI_AutodeskDesktopConnectorVersion)";
+}
+else
+{
+    AutodeskDesktopConnectorVersion = AutodeskDesktopConnectorVersionParam.AsString();
+}
 
 // ═════ 2.4 COORDINATES
 
@@ -252,7 +278,7 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 Console.WriteLine($"\n2 INFORMATION");
 
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       " + 
-				  $"\n2.2 Revit Version:                         " +
+				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
