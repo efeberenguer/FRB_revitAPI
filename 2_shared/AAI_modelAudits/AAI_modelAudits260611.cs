@@ -94,7 +94,6 @@ else
 // ═════ 1.7 FILE NAME
 
 string modelName = doc.Title;
-string modelNameOutput = $"\n1.7 Model Name: {modelName}";
 
 // ═════ 1.8 FILE SIZE
 
@@ -256,4 +255,5 @@ Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" +
 				  $"\n1.4 BIM Lead: {BIMLead}" +
 				  $"\n1.5 Project Lead: {projectLead}" +
 				  $"\n1.6 Model Description: {modelDescription}" +
+				  $"\n1.7 Model Name: {modelName}" +
 				 );
