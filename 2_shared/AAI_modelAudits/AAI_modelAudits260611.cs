@@ -257,3 +257,61 @@ Console.WriteLine($"\n2.1 Splash Screen/Model Information:       " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
 				  $"\n2.6 Published Sets:                        ");
+
+Console.WriteLine($"\n3 KNOWN ISSUES");
+
+Console.WriteLine($"\n4 AAI STANDARDS");
+
+Console.WriteLine($"\n4.1 DWG Linked: " + 
+				  $"\n4.2 Filled Regions:  " +
+				  $"\n4.3 Line Patterns: " +
+				  $"\n4.4 Line Styles: " +
+				  $"\n4.5 Materials: " +
+				  $"\n4.6 Naming Convention: " +
+				  $"\n4.7 Object Styles: " +
+				  $"\n4.8 Phases: " +
+				  $"\n4.9 Project Browser: " +
+				  $"\n4.10 Revit Links: " +
+				  $"\n4.11 Revisions: " +
+				  $"\n4.12 Sheet Issued Revisions: " +
+				  $"\n4.13 Worksets: ");
+
+Console.WriteLine($"\n5 FAMILIES");
+
+Console.WriteLine($"\n5.1 FT Content: " +
+				  $"\n5.2 Generic Models:  " +
+				  $"\n5.3 Model In-Place:  " +
+				  $"\n5.4 Shared Parameters:  " +
+				  $"\n5.5 Largest Family Size: ");
+
+Console.WriteLine($"\n6 PERFORMANCE");
+
+Console.WriteLine($"\n6.1 Areas: " +
+				  $"\n6.2 XXX:  " +
+				  $"\n6.3 XXX:  " +
+				  $"\n6.4 XXX:  " +
+				  $"\n6.5 XXX:  " +
+				  $"\n6.6 XXX:  " +
+				  $"\n6.7 XXX:  " +
+				  $"\n6.8 XXX:  " +
+				  $"\n6.9 XXX:  " +
+				  $"\n6.10 XXX:  " +
+				  $"\n6.11 XXX:  " +
+				  $"\n6.12 XXX:  " +
+				  $"\n6.13 XXX:  " +
+				  $"\n6.14 XXX:  " +
+				  $"\n6.15 XXX:  " +
+				  $"\n6.16 XXX:  " +
+				  $"\n6.17 XXX:  " +
+				  $"\n6.18 XXX:  " +
+				  $"\n6.19 XXX:  " +
+				  $"\n6.20 XXX:  " +
+				  $"\n6.21 XXX:  " +
+				  $"\n6.22 XXX:  " +
+				  $"\n6.23 XXX:  " +
+				  $"\n6.24 XXX:  " +
+				  $"\n6.25 XXX:  " +
+				  $"\n6.26 XXX:  " +
+				  $"\n6.27 Largest Family Size: ");
+
+Console.WriteLine($"\n7 CONCLUSION");
