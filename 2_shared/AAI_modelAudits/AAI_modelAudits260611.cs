@@ -267,6 +267,10 @@ Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION");
 
+Console.WriteLine($"\n1.1 Model Auditor: {modelAuditor}" + 
+				  $"" +
+				 );
+
 Console.WriteLine($"{modelAuditorOutput}" +
 				 $"{projectNumberOutput}" +
 				  $"{projectNameOutput}" +
