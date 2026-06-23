@@ -295,7 +295,7 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 
 Console.WriteLine($"\n2 INFORMATION");
 
-Console.WriteLine($"\n2.1 Splash Screen/Model Information:       " + 
+Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
 				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
