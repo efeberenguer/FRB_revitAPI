@@ -22,7 +22,7 @@ string modelAuditor;
 
 if (modelAuditorParam == null)
 {
-    modelAuditor = "Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
+    modelAuditor = "❎ " + "Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
 }
 else
 {
@@ -35,7 +35,7 @@ string projectNumber = projectInfo.Number;
 
 if (string.IsNullOrWhiteSpace(projectNumber))
 {
-	projectNumber = "Not Defined (Project Number is Empty)";
+	projectNumber = "❎ " + "Not Defined (Project Number is Empty)";
 }
 
 // ═════ 1.3 PROJECT NAME
@@ -44,7 +44,7 @@ string projectName = projectInfo.Name;
 
 if (string.IsNullOrWhiteSpace(projectName))
 {
-	projectName = "Not Defined (Project Name is Empty)";
+	projectName = "❎ " + "Not Defined (Project Name is Empty)";
 }
 
 // ═════ 1.4 BIM LEAD
@@ -55,7 +55,7 @@ string BIMLead;
 
 if (BIMLeadParam == null)
 {
-    BIMLead = "Not Defined (Missing Shared Parameter AAI_BIMLead)";
+    BIMLead = "❎ " + "Not Defined (Missing Shared Parameter AAI_BIMLead)";
 }
 else
 {
@@ -69,7 +69,7 @@ string projectLead;
 
 if (projectLeadParam == null)
 {
-    projectLead = "Not Defined (Missing Shared Parameter AAI_projectLead)";
+    projectLead = "❎ " + "Not Defined (Missing Shared Parameter AAI_projectLead)";
 }
 else
 {
@@ -84,7 +84,7 @@ string modelDescription;
 
 if (modelDescriptionParam == null)
 {
-    modelDescription = "Not Defined (Missing Shared Parameter AAI_ModelDescription)";
+    modelDescription = "❎ " + "Not Defined (Missing Shared Parameter AAI_ModelDescription)";
 }
 else
 {
@@ -103,7 +103,7 @@ string fileSize;
 
 if (fileSizeParam == null)
 {
-    fileSize = "Not Defined (Missing Shared Parameter AAI_fileSize)";
+    fileSize = "❎ " + "Not Defined (Missing Shared Parameter AAI_fileSize)";
 }
 else
 {
@@ -121,6 +121,24 @@ string DD = today.ToString("dd");
 
 // ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
 
+bool splashScreenExists = new FilteredElementCollector(doc)
+	.OfClass(typeof(ViewSheet))
+	.Cast<ViewSheet>()
+	.Any(s =>
+		s.Name == "ProjectSplashScreen" &&
+		s.SheetNumber == "XXXXX");
+
+string splashScreenSummary;
+
+if (splashScreenExists)
+{
+    splashScreenSummary = "Splash Screen is setup";
+}
+else
+{
+    splashScreenSummary = "❎ " + "Not Defined (Missing Splash Screen)";
+}
+
 // ═════ 2.2 REVIT VERSION
 
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
@@ -129,7 +147,7 @@ string revitVersion;
 
 if (revitVersionParam == null)
 {
-    revitVersion = "Not Defined (Missing Shared Parameter AAI_RevitVersion)";
+    revitVersion = "❎ " + "Not Defined (Missing Shared Parameter AAI_RevitVersion)";
 }
 else
 {
@@ -144,7 +162,7 @@ string AutodeskDesktopConnectorVersion;
 
 if (AutodeskDesktopConnectorVersionParam == null)
 {
-    AutodeskDesktopConnectorVersion = "Not Defined (Missing Shared Parameter AAI_AutodeskDesktopConnectorVersion)";
+    AutodeskDesktopConnectorVersion = "❎ " + "Not Defined (Missing Shared Parameter AAI_AutodeskDesktopConnectorVersion)";
 }
 else
 {
