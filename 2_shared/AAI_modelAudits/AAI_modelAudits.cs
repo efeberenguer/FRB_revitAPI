@@ -121,23 +121,29 @@ string DD = today.ToString("dd");
 
 // ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
 
-bool splashScreenExists = new FilteredElementCollector(doc)
-	.OfClass(typeof(ViewSheet))
-	.Cast<ViewSheet>()
-	.Any(s =>
-		s.Name == "ProjectSplashScreen" &&
-		s.SheetNumber == "XXXXX");
+string splashScreenSummary
 
-string splashScreenSummary;
+ViewSheet splashScreen = new FilteredElementCollector(doc)
+    .OfClass(typeof(ViewSheet))
+    .Cast<Viewsheet>()
+    .FirstOrDefault(s =>
+        s.Name == "ProjectSplashScreen" &&
+        s.SheetNumber == "XXXXX");
 
-if (splashScreenExists)
+bool splashScreenIsSetup = false;
+
+if (splashScreen != null)
 {
-    splashScreenSummary = "Splash Screen is setup";
+    splashScreenIsSetup = new FilteredElementCollector(doc, splashScreen.Id)
+        .OfCategory(BuiltInCategory.OST_TitleBlocks)
+        .OfClass(typeof(FamilyInstance))
+        .Cast<FamilyInstance>()
+        .Any(tb => tb.Symbol.Family.Name == "AAI_TBK_ProjectSplashScreen");
 }
-else
-{
-    splashScreenSummary = "❎ " + "Not Defined (Missing Splash Screen)";
-}
+
+splashScreenSummary = splashScreenIsSetup
+    ? "Splash screen is setup"
+    : "❎ Not Defined (Review Splash Screen setup: Sheet Name, Sheet Number, and Title Block Family)";
 
 // ═════ 2.2 REVIT VERSION
 
