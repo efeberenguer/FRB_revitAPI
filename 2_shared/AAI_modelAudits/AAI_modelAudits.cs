@@ -12,6 +12,8 @@ The script is structured in two parts:
 
 // ═══════ 1 GENERAL INFORMATION
 
+List<string> generalInformation = new List<string>();
+
 // ═════ 1.1 AUDITOR
 
 ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
@@ -19,43 +21,64 @@ ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
 
 string modelAuditor;
+string modelAuditorMessage;
+string modelAuditorLine = "1.1 Model Auditor: ";
 
 if (modelAuditorParam == null)
 {
-    modelAuditor = "❎ " + "Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
+    modelAuditorMessage = $"{modelAuditorLine}" + "❎ Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
 }
 else
 {
     modelAuditor = modelAuditorParam.AsString();
+    modelAuditorMessage = $"{modelAuditorLine}" + $"{modelAuditor}";
 }
+
+generalInformation.Add(modelAuditorMessage);
 
 // ═════ 1.2 PROJECT NUMBER
 
 string projectNumber = projectInfo.Number;
+string projectNumberMessage;
+string projectNumberLine = "1.2 Project Number: ";
 
 if (string.IsNullOrWhiteSpace(projectNumber))
 {
-	projectNumber = "❎ " + "Not Defined (Project Number is Empty)";
+	projectNumberMessage =  $"{projectNumberLine}" + "❎ Not Defined (Project Number is Empty)";
 }
+else
+{
+	projectNumberMessage = $"{projectNumberLine}" + $"{projectNumber}";
+}
+
+generalInformation.Add(projectNumberMessage);
 
 // ═════ 1.3 PROJECT NAME
 
 string projectName = projectInfo.Name;
+string projectNameMessage;
 
 if (string.IsNullOrWhiteSpace(projectName))
 {
-	projectName = "❎ " + "Not Defined (Project Name is Empty)";
+	projectNameMessage = "1.3 Project Name: ❎ Not Defined (Project Name is Empty)";
 }
+else
+{
+	projectNameMessage = $"1.3 Project Name: {projectName}";
+}
+
+generalInformation.Add(projectNameMessage);
 
 // ═════ 1.4 BIM LEAD
 
 Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
 string BIMLead;
+string BIMLeadMessage;
 
 if (BIMLeadParam == null)
 {
-    BIMLead = "❎ " + "Not Defined (Missing Shared Parameter AAI_BIMLead)";
+    BIMLeadMessage = "❎ Not Defined (Missing Shared Parameter AAI_BIMLead)";
 }
 else
 {
@@ -121,7 +144,8 @@ string DD = today.ToString("dd");
 
 // ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
 
-string splashScreenSummary
+/*
+string splashScreenSummary;
 
 ViewSheet splashScreen = new FilteredElementCollector(doc)
     .OfClass(typeof(ViewSheet))
@@ -144,7 +168,7 @@ if (splashScreen != null)
 splashScreenSummary = splashScreenIsSetup
     ? "Splash screen is setup"
     : "❎ Not Defined (Review Splash Screen setup: Sheet Name, Sheet Number, and Title Block Family)";
-
+*/
 // ═════ 2.2 REVIT VERSION
 
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
@@ -287,7 +311,12 @@ else
 
 Console.WriteLine($"AAI MODEL AUDIT");
 
-Console.WriteLine($"\n1 GENERAL INFORMATION");
+Console.WriteLine($"\n1 GENERAL INFORMATION\n");
+
+foreach (string message in generalInformation)
+{
+	Console.WriteLine(message);
+}
 
 Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.2 Project Number:       {projectNumber}" +
@@ -300,14 +329,14 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
 
 Console.WriteLine($"\n2 INFORMATION");
-
+/*
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
 				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
 				  $"\n2.6 Published Sets:                        ");
-
+*/
 Console.WriteLine($"\n3 KNOWN ISSUES");
 
 Console.WriteLine($"\n4 AAI STANDARDS");
