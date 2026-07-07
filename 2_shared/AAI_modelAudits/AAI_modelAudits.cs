@@ -22,16 +22,17 @@ Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
 
 string modelAuditor;
 string modelAuditorMessage;
-string modelAuditorLine = "1.1 Model Auditor: ";
+string modelAuditorHeading = "1.1 Model Auditor: ";
+string modelAuditorAction = "❎ Action Required: Set up and/or populate shared parameter AAI_ModelAuditor.";
 
 if (modelAuditorParam == null)
 {
-    modelAuditorMessage = $"{modelAuditorLine}" + "❎ Not Defined (Missing Shared Parameter AAI_ModelAuditor)";
+    modelAuditorMessage = $"{modelAuditorHeading}" + $"{modelAuditorAction}";
 }
 else
 {
     modelAuditor = modelAuditorParam.AsString();
-    modelAuditorMessage = $"{modelAuditorLine}" + $"{modelAuditor}";
+    modelAuditorMessage = $"{modelAuditorHeading}" + $"{modelAuditor}";
 }
 
 generalInformation.Add(modelAuditorMessage);
@@ -40,15 +41,16 @@ generalInformation.Add(modelAuditorMessage);
 
 string projectNumber = projectInfo.Number;
 string projectNumberMessage;
-string projectNumberLine = "1.2 Project Number: ";
+string projectNumberHeading = "1.2 Project Number: ";
+string projectNumberAction = "❎ Action Required: Populate Project Number parameter.";
 
 if (string.IsNullOrWhiteSpace(projectNumber))
 {
-	projectNumberMessage =  $"{projectNumberLine}" + "❎ Not Defined (Project Number is Empty)";
+	projectNumberMessage =  $"{projectNumberHeading}" + $"{projectNumberAction}";
 }
 else
 {
-	projectNumberMessage = $"{projectNumberLine}" + $"{projectNumber}";
+	projectNumberMessage = $"{projectNumberHeading}" + $"{projectNumber}";
 }
 
 generalInformation.Add(projectNumberMessage);
@@ -57,14 +59,16 @@ generalInformation.Add(projectNumberMessage);
 
 string projectName = projectInfo.Name;
 string projectNameMessage;
+string projectNameHeading = "1.3 Project Name: ";
+string projectNameAction = "❎ Action Required: Set up and/or populate shared parameter AAI_BIMLead.";
 
 if (string.IsNullOrWhiteSpace(projectName))
 {
-	projectNameMessage = "1.3 Project Name: ❎ Not Defined (Project Name is Empty)";
+	projectNameMessage = $"{projectNameHeading}" + $"{projectNameAction}";
 }
 else
 {
-	projectNameMessage = $"1.3 Project Name: {projectName}";
+	projectNameMessage = $"{projectNameHeading}" + $"{projectName}";
 }
 
 generalInformation.Add(projectNameMessage);
@@ -73,17 +77,20 @@ generalInformation.Add(projectNameMessage);
 
 Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
-string BIMLead;
+string BIMLead = BIMLeadParam.AsString();;
 string BIMLeadMessage;
+string BIMLeadHeading = "1.4 BIM Lead: ";
+string BIMLeadAction = "❎ Action Required: Populate Project Name parameter.";
 
 if (BIMLeadParam == null)
 {
-    BIMLeadMessage = "❎ Not Defined (Missing Shared Parameter AAI_BIMLead)";
+    BIMLeadMessage = $"{BIMLeadHeading}" + $"{BIMLeadAction}";
 }
 else
 {
-    BIMLead = BIMLeadParam.AsString();
+    BIMLeadMessage = $"{BIMLeadHeading}" + $"{BIMLead}";
 }
+generalInformation.Add(BIMLeadMessage);
 
 // ═════ 1.5 PROJECT LEAD
 Parameter projectLeadParam = projectInfo.LookupParameter("AAI_projectLead");
@@ -318,6 +325,7 @@ foreach (string message in generalInformation)
 	Console.WriteLine(message);
 }
 
+/*
 Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.2 Project Number:       {projectNumber}" +
 				  $"\n1.3 Project Name:         {projectName}" +
@@ -329,14 +337,14 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
 
 Console.WriteLine($"\n2 INFORMATION");
-/*
+
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
 				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
 				  $"\n2.6 Published Sets:                        ");
-*/
+
 Console.WriteLine($"\n3 KNOWN ISSUES");
 
 Console.WriteLine($"\n4 AAI STANDARDS");
@@ -394,3 +402,4 @@ Console.WriteLine($"\n6.1 Areas: " +
 				  $"\n6.27 Warnings: ");
 
 Console.WriteLine($"\n7 CONCLUSION");
+*/
