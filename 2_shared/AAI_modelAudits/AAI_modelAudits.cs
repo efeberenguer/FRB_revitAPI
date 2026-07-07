@@ -19,20 +19,16 @@ List<string> generalInformation = new List<string>();
 ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
 Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
-
-string modelAuditor;
+string modelAuditor = modelAuditorParam.AsString();
 string modelAuditorMessage;
-string modelAuditorHeading = "1.1 Model Auditor: ";
-string modelAuditorAction = "❎ Action Required: Set up and/or populate shared parameter AAI_ModelAuditor.";
 
-if (modelAuditorParam == null)
+if (modelAuditorParam == null || string.IsNullOrWhiteSpace(modelAuditor))
 {
-    modelAuditorMessage = $"{modelAuditorHeading}" + $"{modelAuditorAction}";
+    modelAuditorMessage = "1.1 Model Auditor: Action Required - Shared parameter AAI_ModelAuditor to be set up and/or populated.";
 }
 else
 {
-    modelAuditor = modelAuditorParam.AsString();
-    modelAuditorMessage = $"{modelAuditorHeading}" + $"{modelAuditor}";
+    modelAuditorMessage = $"1.1 Model Auditor: " + $"{modelAuditor}";
 }
 
 generalInformation.Add(modelAuditorMessage);
@@ -41,16 +37,14 @@ generalInformation.Add(modelAuditorMessage);
 
 string projectNumber = projectInfo.Number;
 string projectNumberMessage;
-string projectNumberHeading = "1.2 Project Number: ";
-string projectNumberAction = "❎ Action Required: Populate Project Number parameter.";
 
 if (string.IsNullOrWhiteSpace(projectNumber))
 {
-	projectNumberMessage =  $"{projectNumberHeading}" + $"{projectNumberAction}";
+	projectNumberMessage = "1.2 Project Number: Action Required - Project Number parameter to be populated.";
 }
 else
 {
-	projectNumberMessage = $"{projectNumberHeading}" + $"{projectNumber}";
+	projectNumberMessage = $"1.2 Project Number: " + $"{projectNumber}";
 }
 
 generalInformation.Add(projectNumberMessage);
@@ -59,16 +53,14 @@ generalInformation.Add(projectNumberMessage);
 
 string projectName = projectInfo.Name;
 string projectNameMessage;
-string projectNameHeading = "1.3 Project Name: ";
-string projectNameAction = "❎ Action Required: Set up and/or populate shared parameter AAI_BIMLead.";
 
 if (string.IsNullOrWhiteSpace(projectName))
 {
-	projectNameMessage = $"{projectNameHeading}" + $"{projectNameAction}";
+	projectNameMessage = "1.3 Project Name: Action Required - Project Name parameter to be populated.";
 }
 else
 {
-	projectNameMessage = $"{projectNameHeading}" + $"{projectName}";
+	projectNameMessage = $"1.3 Project Name: {projectName}";
 }
 
 generalInformation.Add(projectNameMessage);
@@ -77,48 +69,47 @@ generalInformation.Add(projectNameMessage);
 
 Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
-string BIMLead = BIMLeadParam.AsString();;
+string BIMLead = BIMLeadParam.AsString();
 string BIMLeadMessage;
-string BIMLeadHeading = "1.4 BIM Lead: ";
-string BIMLeadAction = "❎ Action Required: Populate Project Name parameter.";
 
-if (BIMLeadParam == null)
+if (BIMLeadParam == null || string.IsNullOrWhiteSpace(BIMLead))
 {
-    BIMLeadMessage = $"{BIMLeadHeading}" + $"{BIMLeadAction}";
+    BIMLeadMessage = "1.4 BIM Lead: Action Required - Shared parameter AAI_BIMLead to be set up and/or populated.";
 }
 else
 {
-    BIMLeadMessage = $"{BIMLeadHeading}" + $"{BIMLead}";
+    BIMLeadMessage = $"1.4 BIM Lead: {BIMLead}";
 }
 generalInformation.Add(BIMLeadMessage);
 
 // ═════ 1.5 PROJECT LEAD
-Parameter projectLeadParam = projectInfo.LookupParameter("AAI_projectLead");
 
-string projectLead;
+Parameter projectLeadParam = projectInfo.LookupParameter("AAI_ProjectLead");
+string projectLead = projectLeadParam.AsString();
 
-if (projectLeadParam == null)
+if (projectLeadParam == null || string.IsNullOrWhiteSpace(projectLead))
 {
-    projectLead = "❎ " + "Not Defined (Missing Shared Parameter AAI_projectLead)";
+    projectLeadMessage = "1.5 Project Lead: Action Required - Shared parameter AAI_ProjectLead to be set up and/or populated.";
 }
 else
 {
-    projectLead = projectLeadParam.AsString();
+    projectLeadMessage = $"1.5 Project Lead: {projectLead}";
 }
+generalInformation.Add(projectLeadMessage);
 
 // ═════ 1.6 MODEL DESCRIPTION
 
 Parameter modelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
 
-string modelDescription;
+string modelDescription = modelDescriptionParam.AsString();
 
-if (modelDescriptionParam == null)
+if (modelDescriptionParam == null || string.IsNullOrWhiteSpace(modelDescription))
 {
-    modelDescription = "❎ " + "Not Defined (Missing Shared Parameter AAI_ModelDescription)";
+    modelDescriptionMessage = "1.6 Model Description: Action Required - Shared parameter AAI_ModelDescription to be set up and/or populated.";
 }
 else
 {
-    modelDescription = modelDescriptionParam.AsString();
+    
 }
 
 // ═════ 1.7 FILE NAME
@@ -325,7 +316,6 @@ foreach (string message in generalInformation)
 	Console.WriteLine(message);
 }
 
-/*
 Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.2 Project Number:       {projectNumber}" +
 				  $"\n1.3 Project Name:         {projectName}" +
@@ -337,14 +327,14 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
 
 Console.WriteLine($"\n2 INFORMATION");
-
+/*
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
 				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
 				  $"\n2.6 Published Sets:                        ");
-
+*/
 Console.WriteLine($"\n3 KNOWN ISSUES");
 
 Console.WriteLine($"\n4 AAI STANDARDS");
@@ -402,4 +392,3 @@ Console.WriteLine($"\n6.1 Areas: " +
 				  $"\n6.27 Warnings: ");
 
 Console.WriteLine($"\n7 CONCLUSION");
-*/
