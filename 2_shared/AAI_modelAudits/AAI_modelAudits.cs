@@ -41,11 +41,11 @@ private static void AddInformation(
 
 ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
-// ═══════ 1 GENERAL INFORMATION
+// ═══════ GENERAL INFORMATION
 
 List<string> generalInformation = new List<string>();
 
-// ═════ 1.1 AUDITOR
+// ═════ AUDITOR
 
 Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
 
@@ -60,7 +60,7 @@ AddInformation(
 	modelAuditorParam?.AsString(),
 	"Shared parameter AAI_ModelAuditor to be set up and/or populated.");
 	
-// ═════ 1.2 PROJECT NUMBER
+// ═════ PROJECT NUMBER
 
 AddInformation(
 	generalInformation,
@@ -70,7 +70,7 @@ AddInformation(
 	projectInfo.Number,
 	"Project Number to be populated.");
 
-// ═════ 1.3 PROJECT NAME
+// ═════ PROJECT NAME
 
 AddInformation(
 	generalInformation,
@@ -80,7 +80,7 @@ AddInformation(
 	projectInfo.Name,
 	"Project Name to be populated.");
 
-// ═════ 1.4 BIM LEAD
+// ═════ BIM LEAD
 
 Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
@@ -92,7 +92,7 @@ AddInformation(
 	BIMLeadParam?.AsString(),
 	"Shared parameter AAI_BIMLead to be set up and/or populated.");
 
-// ═════ 1.5 PROJECT LEAD
+// ═════ PROJECT LEAD
 
 Parameter projectLeadParam = projectInfo.LookupParameter("AAI_ProjectLead");
 
@@ -104,42 +104,39 @@ AddInformation(
 	projectLeadParam?.AsString(),
 	"Shared parameter AAI_ProjectLead to be set up and/or populated.");
 
+// ═════ MODEL DESCRIPTION
 
-// ═════ 1.6 MODEL DESCRIPTION
-
-/*
 Parameter modelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
 
-string modelDescription = modelDescriptionParam.AsString();
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Model Description",
+	modelDescriptionParam?.AsString(),
+	"Shared parameter AAI_ModelDescription to be set up and/or populated.");
 
-if (modelDescriptionParam == null || string.IsNullOrWhiteSpace(modelDescription))
-{
-    modelDescriptionMessage = "1.6 Model Description: Action Required - Shared parameter AAI_ModelDescription to be set up and/or populated.";
-}
-else
-{
-    
-}
-*/
+// ═════ FILE NAME
 
-// ═════ 1.7 FILE NAME
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"File Name",
+	doc.Title,
+	"N/A");
 
-string modelName = doc.Title;
+// ═════ FILE SIZE
 
-// ═════ 1.8 FILE SIZE
+Parameter fileSizeParam = projectInfo.LookupParameter("AAI_FileSize");
 
-Parameter fileSizeParam = projectInfo.LookupParameter("AAI_fileSize");
-
-string fileSize;
-
-if (fileSizeParam == null)
-{
-    fileSize = "❎ " + "Not Defined (Missing Shared Parameter AAI_fileSize)";
-}
-else
-{
-    fileSize = fileSizeParam.AsDouble().ToString() + "(MB)";
-}
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"File Size",
+	fileSizeParam?.AsString(),
+	"Shared parameter AAI_FileSize to be set up and/or populated.");
 
 // ═════ 1.9 ISSUE DATE
 
@@ -147,10 +144,27 @@ DateTime today = DateTime.Today; // Returns the current date
 string YYYY = today.ToString("yyyy");
 string MM = today.ToString("MM");
 string DD = today.ToString("dd");
+string issueDate = YYYY + "-" + MM + "-" + DD;
+
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Issue Date",
+	issueDate,
+	"N/A");
+
+/*
+
+*/
 
 // ═══════ 2 INFORMATION
 
+subsectionNumber = 1;
+sectionNumber = 2;
+
 // ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
+
 
 /*
 string splashScreenSummary;
@@ -176,9 +190,11 @@ if (splashScreen != null)
 splashScreenSummary = splashScreenIsSetup
     ? "Splash screen is setup"
     : "❎ Not Defined (Review Splash Screen setup: Sheet Name, Sheet Number, and Title Block Family)";
+*/
 
 // ═════ 2.2 REVIT VERSION
 
+/*
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
 
 string revitVersion;
@@ -191,9 +207,11 @@ else
 {
     revitVersion = revitVersionParam.AsString();
 }
+*/
 
 // ═════ 2.3 AUTODESK DESKTOP CONNECTOR VERSION
 
+/*
 Parameter AutodeskDesktopConnectorVersionParam = projectInfo.LookupParameter("AAI_AutodeskDesktopConnectorVersion");
 
 string AutodeskDesktopConnectorVersion;
@@ -206,6 +224,7 @@ else
 {
     AutodeskDesktopConnectorVersion = AutodeskDesktopConnectorVersionParam.AsString();
 }
+*/
 
 // ═════ 2.4 COORDINATES
 
@@ -316,7 +335,7 @@ else
 // ═══════ 8 NAMING CONVENTION
 
 // ══════════ AUDIT OUTPUT
-*/
+
 Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION\n");
@@ -325,17 +344,10 @@ foreach (string message in generalInformation)
 {
 	Console.WriteLine(message);
 }
-/*
-Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
-				  $"\n1.2 Project Number:       {projectNumber}" +
-				  $"\n1.3 Project Name:         {projectName}" +
-				  $"\n1.4 BIM Lead:             {BIMLead}" +
-				  $"\n1.5 Project Lead:         {projectLead}" +
-				  $"\n1.6 Model Description:    {modelDescription}" +
-				  $"\n1.7 Model Name:           {modelName}" +
-				  $"\n1.8 File Size:            {fileSize}" +
-				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
 
+Console.WriteLine($"\n2 INFORMATION\n");
+
+/*
 Console.WriteLine($"\n2 INFORMATION");
 
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
