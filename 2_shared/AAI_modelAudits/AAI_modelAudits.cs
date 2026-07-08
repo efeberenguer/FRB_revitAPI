@@ -8,7 +8,38 @@ The script is structured in two parts:
 - The second part provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
+// ══════════ METHODS
+
+// ═══════ HELPER METHOD
+
+private static void AddInformation(
+	List<string> list,
+	int sectionNumber,
+	ref int subsectionNumber,
+	string title,
+	string value,
+	string actionRequired)
+{
+	string prefix = $"{sectionNumber}.{subsectionNumber}";
+	
+	string message;
+	
+	if (string.IsNullOrWhiteSpace(value))
+	{
+		message = $"{prefix} {title}: Action Required - {actionRequired}";
+	}
+	else
+	{
+		message = $"{prefix} {title}: {value}";
+	}
+	list.Add(message);
+	
+	subsectionNumber++;
+}
+
 // ══════════ DATA EXTRACTION AND PROCESSING
+
+ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
 // ═══════ 1 GENERAL INFORMATION
 
@@ -16,89 +47,67 @@ List<string> generalInformation = new List<string>();
 
 // ═════ 1.1 AUDITOR
 
-ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
-
 Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
-string modelAuditor = modelAuditorParam.AsString();
-string modelAuditorMessage;
 
-if (modelAuditorParam == null || string.IsNullOrWhiteSpace(modelAuditor))
-{
-    modelAuditorMessage = "1.1 Model Auditor: Action Required - Shared parameter AAI_ModelAuditor to be set up and/or populated.";
-}
-else
-{
-    modelAuditorMessage = $"1.1 Model Auditor: " + $"{modelAuditor}";
-}
+int sectionNumber = 1;
+int subsectionNumber = 1;
 
-generalInformation.Add(modelAuditorMessage);
-
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Model Auditor",
+	modelAuditorParam?.AsString(),
+	"Shared parameter AAI_ModelAuditor to be set up and/or populated.");
+	
 // ═════ 1.2 PROJECT NUMBER
 
-string projectNumber = projectInfo.Number;
-string projectNumberMessage;
-
-if (string.IsNullOrWhiteSpace(projectNumber))
-{
-	projectNumberMessage = "1.2 Project Number: Action Required - Project Number parameter to be populated.";
-}
-else
-{
-	projectNumberMessage = $"1.2 Project Number: " + $"{projectNumber}";
-}
-
-generalInformation.Add(projectNumberMessage);
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Project Number",
+	projectInfo.Number,
+	"Project Number to be populated.");
 
 // ═════ 1.3 PROJECT NAME
 
-string projectName = projectInfo.Name;
-string projectNameMessage;
-
-if (string.IsNullOrWhiteSpace(projectName))
-{
-	projectNameMessage = "1.3 Project Name: Action Required - Project Name parameter to be populated.";
-}
-else
-{
-	projectNameMessage = $"1.3 Project Name: {projectName}";
-}
-
-generalInformation.Add(projectNameMessage);
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Project Name",
+	projectInfo.Name,
+	"Project Name to be populated.");
 
 // ═════ 1.4 BIM LEAD
 
 Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
 
-string BIMLead = BIMLeadParam.AsString();
-string BIMLeadMessage;
-
-if (BIMLeadParam == null || string.IsNullOrWhiteSpace(BIMLead))
-{
-    BIMLeadMessage = "1.4 BIM Lead: Action Required - Shared parameter AAI_BIMLead to be set up and/or populated.";
-}
-else
-{
-    BIMLeadMessage = $"1.4 BIM Lead: {BIMLead}";
-}
-generalInformation.Add(BIMLeadMessage);
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"BIM Lead",
+	BIMLeadParam?.AsString(),
+	"Shared parameter AAI_BIMLead to be set up and/or populated.");
 
 // ═════ 1.5 PROJECT LEAD
 
 Parameter projectLeadParam = projectInfo.LookupParameter("AAI_ProjectLead");
-string projectLead = projectLeadParam.AsString();
 
-if (projectLeadParam == null || string.IsNullOrWhiteSpace(projectLead))
-{
-    projectLeadMessage = "1.5 Project Lead: Action Required - Shared parameter AAI_ProjectLead to be set up and/or populated.";
-}
-else
-{
-    projectLeadMessage = $"1.5 Project Lead: {projectLead}";
-}
-generalInformation.Add(projectLeadMessage);
+AddInformation(
+	generalInformation,
+	sectionNumber,
+	ref subsectionNumber,
+	"Project Lead",
+	projectLeadParam?.AsString(),
+	"Shared parameter AAI_ProjectLead to be set up and/or populated.");
+
 
 // ═════ 1.6 MODEL DESCRIPTION
 
+/*
 Parameter modelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
 
 string modelDescription = modelDescriptionParam.AsString();
@@ -111,6 +120,7 @@ else
 {
     
 }
+*/
 
 // ═════ 1.7 FILE NAME
 
@@ -166,7 +176,7 @@ if (splashScreen != null)
 splashScreenSummary = splashScreenIsSetup
     ? "Splash screen is setup"
     : "❎ Not Defined (Review Splash Screen setup: Sheet Name, Sheet Number, and Title Block Family)";
-*/
+
 // ═════ 2.2 REVIT VERSION
 
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
@@ -306,7 +316,7 @@ else
 // ═══════ 8 NAMING CONVENTION
 
 // ══════════ AUDIT OUTPUT
-
+*/
 Console.WriteLine($"AAI MODEL AUDIT");
 
 Console.WriteLine($"\n1 GENERAL INFORMATION\n");
@@ -315,7 +325,7 @@ foreach (string message in generalInformation)
 {
 	Console.WriteLine(message);
 }
-
+/*
 Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.2 Project Number:       {projectNumber}" +
 				  $"\n1.3 Project Name:         {projectName}" +
@@ -327,14 +337,14 @@ Console.WriteLine($"\n1.1 Model Auditor:        {modelAuditor}" +
 				  $"\n1.9 Issue Date:           {YYYY}-{MM}-{DD}");
 
 Console.WriteLine($"\n2 INFORMATION");
-/*
+
 Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
 				  $"\n2.2 Revit Version:                         {revitVersion}" +
 				  $"\n2.3 Autodesk Desktop Connector Version:    " +
 				  $"\n2.4 Coordinates:                           " +
 				  $"\n2.5 Copy Monitor:                          " +
 				  $"\n2.6 Published Sets:                        ");
-*/
+
 Console.WriteLine($"\n3 KNOWN ISSUES");
 
 Console.WriteLine($"\n4 AAI STANDARDS");
@@ -392,3 +402,4 @@ Console.WriteLine($"\n6.1 Areas: " +
 				  $"\n6.27 Warnings: ");
 
 Console.WriteLine($"\n7 CONCLUSION");
+*/
