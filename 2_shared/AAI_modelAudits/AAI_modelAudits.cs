@@ -154,10 +154,6 @@ AddInformation(
 	issueDate,
 	"N/A");
 
-/*
-
-*/
-
 // ═══════ 2 INFORMATION
 
 subsectionNumber = 1;
@@ -165,32 +161,48 @@ sectionNumber = 2;
 
 // ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
 
+List<string> information = new List<string>();
 
-/*
 string splashScreenSummary;
 
 ViewSheet splashScreen = new FilteredElementCollector(doc)
     .OfClass(typeof(ViewSheet))
-    .Cast<Viewsheet>()
+    .Cast<ViewSheet>()
     .FirstOrDefault(s =>
         s.Name == "ProjectSplashScreen" &&
         s.SheetNumber == "XXXXX");
-
+        
 bool splashScreenIsSetup = false;
 
-if (splashScreen != null)
+if (splashScreen == null)
+{
+	splashScreenSummary = null;
+}
+else
 {
     splashScreenIsSetup = new FilteredElementCollector(doc, splashScreen.Id)
         .OfCategory(BuiltInCategory.OST_TitleBlocks)
         .OfClass(typeof(FamilyInstance))
         .Cast<FamilyInstance>()
         .Any(tb => tb.Symbol.Family.Name == "AAI_TBK_ProjectSplashScreen");
+        
+	if (splashScreen == null)
+	{
+		splashScreenSummary = null;
+	}
+	else
+	{
+		splashScreenSummary = "YES";
+	}
 }
 
-splashScreenSummary = splashScreenIsSetup
-    ? "Splash screen is setup"
-    : "❎ Not Defined (Review Splash Screen setup: Sheet Name, Sheet Number, and Title Block Family)";
-*/
+AddInformation(
+	information,
+	sectionNumber,
+	ref subsectionNumber,
+	"Splash Screen",
+	splashScreenSummary,
+	"Review Splash Screen Setup");
 
 // ═════ 2.2 REVIT VERSION
 
@@ -346,6 +358,11 @@ foreach (string message in generalInformation)
 }
 
 Console.WriteLine($"\n2 INFORMATION\n");
+
+foreach (string message in information)
+{
+	Console.WriteLine(message);
+}
 
 /*
 Console.WriteLine($"\n2 INFORMATION");
