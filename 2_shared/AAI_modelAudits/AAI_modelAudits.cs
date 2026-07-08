@@ -158,12 +158,9 @@ AddInformation(
 
 subsectionNumber = 1;
 sectionNumber = 2;
-
-// ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
-
 List<string> information = new List<string>();
 
-string splashScreenSummary;
+// ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
 
 ViewSheet splashScreen = new FilteredElementCollector(doc)
     .OfClass(typeof(ViewSheet))
@@ -172,29 +169,15 @@ ViewSheet splashScreen = new FilteredElementCollector(doc)
         s.Name == "ProjectSplashScreen" &&
         s.SheetNumber == "XXXXX");
         
-bool splashScreenIsSetup = false;
-
-if (splashScreen == null)
-{
-	splashScreenSummary = null;
-}
-else
-{
-    splashScreenIsSetup = new FilteredElementCollector(doc, splashScreen.Id)
-        .OfCategory(BuiltInCategory.OST_TitleBlocks)
-        .OfClass(typeof(FamilyInstance))
-        .Cast<FamilyInstance>()
-        .Any(tb => tb.Symbol.Family.Name == "AAI_TBK_ProjectSplashScreen");
-        
-	if (splashScreen == null)
-	{
-		splashScreenSummary = null;
-	}
-	else
-	{
-		splashScreenSummary = "YES";
-	}
-}
+string splashScreenSummary =
+	splashScreen != null &&
+	new FilteredElementCollector(doc, splashScreen.Id)
+	.OfCategory(BuiltInCategory.OST_TitleBlocks)
+	.OfClass(typeof(FamilyInstance))
+	.Cast<FamilyInstance>()
+	.Any(tb => tb.Symbol.Family.Name == "AAI_TBK_ProjectSplashScreen")
+		? "YES"
+		: null;
 
 AddInformation(
 	information,
