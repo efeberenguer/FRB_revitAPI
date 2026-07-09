@@ -26,11 +26,11 @@ private static void AddInformation(
 	
 	if (string.IsNullOrWhiteSpace(value))
 	{
-		message = $"{prefix} {title}: Action Required - {actionRequired}";
+		message = $"═══ {prefix} {title} ═══\nAction Required - {actionRequired}\n";
 	}
 	else
 	{
-		message = $"{prefix} {title}: {value}";
+		message = $"═══ {prefix} {title} ═══\n{value}\n";
 	}
 	list.Add(message);
 	
@@ -154,14 +154,17 @@ AddInformation(
 	issueDate,
 	"N/A");
 
-// ═══════ 2 INFORMATION
+// ═══════ INFORMATION
 
 subsectionNumber = 1;
-sectionNumber = 2;
+sectionNumber++;
+
 List<string> information = new List<string>();
 
-// ═════ 2.1 SPLASH SCREEN & MODEL INFORMATION
+// ═════ SPLASH SCREEN & MODEL INFORMATION
 
+try
+{
 ViewSheet splashScreen = new FilteredElementCollector(doc)
     .OfClass(typeof(ViewSheet))
     .Cast<ViewSheet>()
@@ -186,43 +189,120 @@ AddInformation(
 	"Splash Screen",
 	splashScreenSummary,
 	"Review Splash Screen Setup");
+}
+catch (Exception ex)
+{
+	TaskDialog.Show("Splash Screen", ex.ToString());
+}
+// ═════ REVIT VERSION
 
-// ═════ 2.2 REVIT VERSION
-
-/*
+try
+{
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
 
-string revitVersion;
-
-if (revitVersionParam == null)
-{
-    revitVersion = "❎ " + "Not Defined (Missing Shared Parameter AAI_RevitVersion)";
+AddInformation(
+	information,
+	sectionNumber,
+	ref subsectionNumber,
+	"Revit Version",
+	revitVersionParam?.AsString(),
+	"Shared parameter AAI_RevitVersion to be set up and/or populated.");
 }
-else
+catch (Exception ex)
 {
-    revitVersion = revitVersionParam.AsString();
+	TaskDialog.Show("Revit Version", ex.ToString());
 }
-*/
 
-// ═════ 2.3 AUTODESK DESKTOP CONNECTOR VERSION
+// ═════ AUTODESK DESKTOP CONNECTOR VERSION
 
-/*
 Parameter AutodeskDesktopConnectorVersionParam = projectInfo.LookupParameter("AAI_AutodeskDesktopConnectorVersion");
 
-string AutodeskDesktopConnectorVersion;
+AddInformation(
+	information,
+	sectionNumber,
+	ref subsectionNumber,
+	"Autodesk Desktop Connector Version",
+	AutodeskDesktopConnectorVersionParam?.AsString(),
+	"Shared parameter AAI_AutodeskDesktopConnectorVersion to be set up and/or populated.");
 
-if (AutodeskDesktopConnectorVersionParam == null)
-{
-    AutodeskDesktopConnectorVersion = "❎ " + "Not Defined (Missing Shared Parameter AAI_AutodeskDesktopConnectorVersion)";
-}
-else
-{
-    AutodeskDesktopConnectorVersion = AutodeskDesktopConnectorVersionParam.AsString();
-}
+// ═════ COORDINATES
+
+/*
+BasePoint projectBasePoint = BasePoint.GetProjectBasePoint(doc);
+
+double northSouth = projectBasePoint
+	.get_Parameter(BuiltInParameter.BASEPOINT_NORTHSOUTH_PARAM)
+	.AsDouble();
+	
+double eastWest = projectBasePoint
+	.get_Parameter(BuiltInParameter.BASEPOINT_EASTWEST_PARAM)
+	.AsDouble();
+	
+double northSouthMetric =
+	UnitUtils.ConvertFromInternalUnits(
+		northSouth,
+		UnitTypeId.Meters);
+		
+double eastWestMetric =
+	UnitUtils.ConvertFromInternalUnits(
+		eastWest,
+		UnitTypeId.Meters);
+	
+Parameter northSouthParam = projectInfo.LookupParameter("AAI_Coordinates_North");
+Parameter eastWestParam = projectInfo.LookupParameter("AAI_Coordinates_East");
+
+double northSouthParamDouble = northSouthParam.ToDouble();
+double eastWestParamDouble = northSouthParam.ToDouble();
+
+bool northSouthCheck;
+bool eastWestCheck;
+
+northSouthMetric == northSouthParamDouble ? northSouthCheck = true : northSouthCheck = false;
+eastWestMetric == eastWestParamDouble ? eastWestCheck = true : eastWestCheck = false;
+
+string coordinates = $"{northSouthMetric:F3} m, {eastWestMetric:F3} m"
+
+AddInformation(
+	information,
+	sectionNumber,
+	ref subsectionNumber,
+	"Coordinates",
+	coordinates,
+	"Shared parameter AAI_Coordinates_North and AAI_Coordinates_East to be reviewed against Project Base Point information.");
+
+// ═════ ELEVATION
+
+double elevation = projectBasePoint
+	.get_Parameter(BuiltInParameter.BASEPOINT_ELEVATION_PARAM)
+	.AsDouble();
+	
+double elevationMetric =
+	UnitUtils.ConvertFromInternalUnits(
+		elevation,
+		UnitTypeId.Meters);
+
+Parameter elevationParam = projectInfo.LookupParameter("AAI_Coordinates_Elevation");
+
+double elevationParamDouble = northSouthParam.ToDouble();
+
+bool elevationCheck;
+
+elevationMetric == elevationDouble ? elevationCheck = true : elevationCheck = false
+
+// ═════ ANGLE TO TRUE NORTH
+
+
+double angle = projectBasePoint
+	.get_Parameter(BuiltInParameter.BASEPOINT_ANGLETON_PARAM)
+	.AsDouble();
+		
+double angleDegrees =
+	UnitUtils.ConvertFromInternalUnits(
+		angle,
+		UnitTypeId.Degrees);	
+
+Parameter angleParam = projectInfo.LookupParameter("AAI_Coordinates_RotationTrueNorth");
 */
-
-// ═════ 2.4 COORDINATES
-
 // ═════ 2.5 COPY MONITOR
 
 // ═════ 2.6 PUBLISHED SETS
