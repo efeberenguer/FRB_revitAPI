@@ -26,13 +26,44 @@ private static void AddInformation(
 	
 	if (string.IsNullOrWhiteSpace(value))
 	{
-		message = $"═══ {prefix} {title} ═══\nAction Required - {actionRequired}\n";
+		message = $"{prefix} {title}\n\nAction Required: {actionRequired}\n\n";
 	}
 	else
 	{
-		message = $"═══ {prefix} {title} ═══\n{value}\n";
+		message = $"{prefix} {title}\n\n{value}\n\n";
 	}
 	list.Add(message);
+	
+	subsectionNumber++;
+}
+
+// ═══════ INVENTORY METHOD
+
+private static void AddInventory(
+	List<string> list,
+	int sectionNumber,
+	ref int subsectionNumber,
+	string title,
+	IEnumerable<string> items)
+	
+{
+	string prefix = $"{sectionNumber}.{subsectionNumber}";
+	
+	List<string> values = items.ToList();
+	
+	list.Add($"{prefix} {title} ({values.Count})");
+	
+	foreach (var group in values.GroupBy(i => i).OrderBy(g => g.Key))
+	{
+		if (group.Count() == 1)
+		{
+			list.Add($"    - {group.Key}");
+		}
+		else
+		{
+			list.Add($"    - {group.Key} ({group.Count()} instances)");
+		}
+	}
 	
 	subsectionNumber++;
 }
@@ -163,8 +194,6 @@ List<string> information = new List<string>();
 
 // ═════ SPLASH SCREEN & MODEL INFORMATION
 
-try
-{
 ViewSheet splashScreen = new FilteredElementCollector(doc)
     .OfClass(typeof(ViewSheet))
     .Cast<ViewSheet>()
@@ -189,15 +218,9 @@ AddInformation(
 	"Splash Screen",
 	splashScreenSummary,
 	"Review Splash Screen Setup");
-}
-catch (Exception ex)
-{
-	TaskDialog.Show("Splash Screen", ex.ToString());
-}
+
 // ═════ REVIT VERSION
 
-try
-{
 Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
 
 AddInformation(
@@ -207,11 +230,6 @@ AddInformation(
 	"Revit Version",
 	revitVersionParam?.AsString(),
 	"Shared parameter AAI_RevitVersion to be set up and/or populated.");
-}
-catch (Exception ex)
-{
-	TaskDialog.Show("Revit Version", ex.ToString());
-}
 
 // ═════ AUTODESK DESKTOP CONNECTOR VERSION
 
@@ -226,13 +244,42 @@ AddInformation(
 	"Shared parameter AAI_AutodeskDesktopConnectorVersion to be set up and/or populated.");
 
 // ═════ COORDINATES
+/*
+try
+{
+	BasePoint projectBasePoint = BasePoint.GetProjectBasePoint(doc);
+	
+	double north = projectBasePoint
+		.get_Parameter(BuiltInParameter.BASEPOINT_NORTHSOUTH_PARAM);
+		
+	double actualNorth=
+		UnitUtils.ConvertFromInternalUnits(
+			north,
+			UnitTypeId.Meters);
+			
+	double sharedNorth;
+	
+	bool ok = double.TryParse(
+		AAI_Coordinates_North.AsString(),
+		out sharedNorth);
+		
+	bool matches =
+		ok &&
+		Math.Abs(actualNorth - sharedNorth) < 0.001;
+}
+catch (Exception ex)
+{
+    TaskDialog.Show("Coordinates", ex.ToString());
+}
+
 
 /*
-BasePoint projectBasePoint = BasePoint.GetProjectBasePoint(doc);
+try
+{
 
-double northSouth = projectBasePoint
-	.get_Parameter(BuiltInParameter.BASEPOINT_NORTHSOUTH_PARAM)
-	.AsDouble();
+
+
+	.AsValueString();
 	
 double eastWest = projectBasePoint
 	.get_Parameter(BuiltInParameter.BASEPOINT_EASTWEST_PARAM)
@@ -260,7 +307,7 @@ bool eastWestCheck;
 northSouthMetric == northSouthParamDouble ? northSouthCheck = true : northSouthCheck = false;
 eastWestMetric == eastWestParamDouble ? eastWestCheck = true : eastWestCheck = false;
 
-string coordinates = $"{northSouthMetric:F3} m, {eastWestMetric:F3} m"
+string coordinates = $"{northSouthMetric:F3} m, {eastWestMetric:F3} m";
 
 AddInformation(
 	information,
@@ -269,9 +316,13 @@ AddInformation(
 	"Coordinates",
 	coordinates,
 	"Shared parameter AAI_Coordinates_North and AAI_Coordinates_East to be reviewed against Project Base Point information.");
+}
+
+*/
 
 // ═════ ELEVATION
 
+/*
 double elevation = projectBasePoint
 	.get_Parameter(BuiltInParameter.BASEPOINT_ELEVATION_PARAM)
 	.AsDouble();
@@ -288,9 +339,9 @@ double elevationParamDouble = northSouthParam.ToDouble();
 bool elevationCheck;
 
 elevationMetric == elevationDouble ? elevationCheck = true : elevationCheck = false
-
+*/
 // ═════ ANGLE TO TRUE NORTH
-
+/*
 
 double angle = projectBasePoint
 	.get_Parameter(BuiltInParameter.BASEPOINT_ANGLETON_PARAM)
@@ -307,11 +358,36 @@ Parameter angleParam = projectInfo.LookupParameter("AAI_Coordinates_RotationTrue
 
 // ═════ 2.6 PUBLISHED SETS
 
+subsectionNumber = 1;
+sectionNumber++;
+
 // ═══════ 3 KNOWN ISSUES
 
 // ═══════ 4 AAI STANDARDS
 
+List<string> aaiStandards = new List<string>();
+
 // ═════ 4.1 DWG LINKED
+
+List<string> linkedDWG = new FilteredElementCollector(doc)
+	.OfClass(typeof(ImportInstance))
+	.Cast<ImportInstance>()
+	.Where(i => i.IsLinked)
+	.Select(i => doc.GetElement(i.GetTypeId()).Name)
+	.OrderBy(n => n)
+	.ToList();
+	
+var groupedLinkedDWG = linkedDWG
+	.GroupBy(name => name)
+	.OrderBy(group => group.Key);
+	
+AddInventory(
+	aaiStandards,
+	sectionNumber,
+	ref subsectionNumber,
+	"Linked DWG Files",
+	linkedDWG);
+
 
 // ═════ 4.2 FILLED REGIONS
 
@@ -423,6 +499,13 @@ foreach (string message in generalInformation)
 Console.WriteLine($"\n2 INFORMATION\n");
 
 foreach (string message in information)
+{
+	Console.WriteLine(message);
+}
+
+Console.WriteLine($"\n4 AAI STANDARDS\n");
+
+foreach (string message in aaiStandards)
 {
 	Console.WriteLine(message);
 }
