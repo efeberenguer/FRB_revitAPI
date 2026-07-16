@@ -10,8 +10,6 @@ The script is structured in two parts:
 
 // ══════════ METHODS
 
-// aaa branch test
-
 // ═══════ HELPER METHOD
 
 private static void AddInformation(
@@ -53,7 +51,7 @@ private static void AddInventory(
 	
 	List<string> values = items.ToList();
 	
-	list.Add($"{prefix} {title} ({values.Count})");
+	list.Add($"{prefix} {title} ({values.Count} instances)");
 	
 	foreach (var group in values.GroupBy(i => i).OrderBy(g => g.Key))
 	{
@@ -371,6 +369,73 @@ List<string> aaiStandards = new List<string>();
 
 // ═════ 4.1 DWG LINKED
 
+List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
+	.OfClass(typeof(ImportInstance))
+	.Cast<ImportInstance>()
+	.Where(i => i.IsLinked)
+	.ToList();
+	
+// count all linked DWG instances
+	
+// one dictionary to group by name and later check redundant instances
+
+Dictionary<string, List<ImportInstance>> byTypeName =
+	linkedDWGs
+		.GroupBy(i =>
+		{
+			ElementType type = (ElementType)doc.GetElement(i.GetTypeId());
+			return type.Name;
+		})
+		.ToDictionary(g => g.Key, g => g.ToList());
+	
+// one dictionary to group by workset and check that the linkedDWGs
+// are placed in the correct workset
+
+Dictionary<string, List<ImportInstance>> byWorkset = linkedDWGs
+	.GroupBy( i =>
+		i.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM)
+		?.AsValueString() ?? "<No Workset>")
+	.ToDictionary(g => g.Key, g => g.ToList());
+	
+// processing the dictionary that checks the names of the linked instances
+
+Console.WriteLine($"LINKED DWGS\n");
+
+Console.WriteLine($"Linked DWGs: {linkedDWGs.Count} instance(s)\n");
+
+Console.WriteLine("Action Required - Delete redundant instances of the following linked DWG files: ");
+
+foreach (var kvp in byTypeName)
+{
+	if (kvp.Value.Count > 1)
+	{
+		Console.WriteLine($"\n{kvp.Value.Count} instances - {kvp.Key}\n");
+		
+		foreach (ImportInstance dwg in kvp.Value)
+		{
+			Console.WriteLine($"ElementId: {dwg.Id.IntegerValue}");
+		}
+	}	
+}
+
+Console.WriteLine("\nAction Required - Ensure adequate workset naming for the following linked DWG files: ");
+
+WorksetTable worksetTable = doc.GetWorksetTable();
+
+foreach (ImportInstance dwg in linkedDWGs)
+{
+    string typeName = doc.GetElement(dwg.GetTypeId()).Name;
+    string dwgName = Path.GetFileNameWithoutExtension(typeName);
+    string worksetName = worksetTable.GetWorkset(dwg.WorksetId).Name;
+    string expectedWorkset = $"LinkCAD_{dwgName}";
+
+    if (worksetName != expectedWorkset)
+    {
+        Console.WriteLine($"\nLinked DWG: {typeName} \n- Current Workset Name:  {worksetName} \n- Expected Workset Name: {expectedWorkset}");
+    }
+}
+
+/*
 List<string> linkedDWG = new FilteredElementCollector(doc)
 	.OfClass(typeof(ImportInstance))
 	.Cast<ImportInstance>()
@@ -389,9 +454,13 @@ AddInventory(
 	ref subsectionNumber,
 	"Linked DWG Files",
 	linkedDWG);
+*/
 
+// ═════ 4.2 FILLED REGIONS TYPES
 
-// ═════ 4.2 FILLED REGIONS
+// ═════ FILLED REGIONS PLACED IN VIEWS PLACED IN SHEETS
+
+// ═════ FILLED REGIONS PLACED IN VIEWS NOT PLACED IN SHEETS
 
 // ═════ 4.3 LINE PATTERNS
 
@@ -505,7 +574,7 @@ foreach (string message in information)
 	Console.WriteLine(message);
 }
 
-Console.WriteLine($"\n4 AAI STANDARDS\n");
+Console.WriteLine($"\n3 AAI STANDARDS\n");
 
 foreach (string message in aaiStandards)
 {
@@ -513,14 +582,6 @@ foreach (string message in aaiStandards)
 }
 
 /*
-Console.WriteLine($"\n2 INFORMATION");
-
-Console.WriteLine($"\n2.1 Splash Screen/Model Information:       {splashScreenSummary}" + 
-				  $"\n2.2 Revit Version:                         {revitVersion}" +
-				  $"\n2.3 Autodesk Desktop Connector Version:    " +
-				  $"\n2.4 Coordinates:                           " +
-				  $"\n2.5 Copy Monitor:                          " +
-				  $"\n2.6 Published Sets:                        ");
 
 Console.WriteLine($"\n3 KNOWN ISSUES");
 
