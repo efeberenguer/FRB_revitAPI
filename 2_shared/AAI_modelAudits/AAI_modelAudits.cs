@@ -8,6 +8,8 @@ The script is structured in two parts:
 - The second part provides a text-based output listing all the non-conforming items and, where relevant, a score for each section, which is then used to calculate a final score for the model.
 */
 
+// ══════════ VARIABLES
+
 // ══════════ METHODS
 
 // ═══════ HELPER METHOD
@@ -19,9 +21,8 @@ private static void AddInformation(
 	string title,
 	string value,
 	string actionRequired)
-{
+{	
 	string prefix = $"{sectionNumber}.{subsectionNumber}";
-	
 	string message;
 	
 	if (string.IsNullOrWhiteSpace(value))
@@ -46,9 +47,10 @@ private static void AddInventory(
 	string title,
 	IEnumerable<string> items)
 	
-{
+{	
 	string prefix = $"{sectionNumber}.{subsectionNumber}";
-	
+	string message;
+
 	List<string> values = items.ToList();
 	
 	list.Add($"{prefix} {title} ({values.Count} instances)");
@@ -63,6 +65,76 @@ private static void AddInventory(
 		{
 			list.Add($"    - {group.Key} ({group.Count()} instances)");
 		}
+	}
+	
+	subsectionNumber++;
+}
+
+// ═══════ LINKED DWGS METHOD
+
+private static void linkedDWGsreview(
+	Document doc,
+	List<string> list,
+	int sectionNumber,
+	ref int subsectionNumber,
+	string title)
+{
+	string prefix = $"{sectionNumber}.{subsectionNumber}";
+
+	List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
+	.OfClass(typeof(ImportInstance))
+	.Cast<ImportInstance>()
+	.Where(i => i.IsLinked)
+	.ToList();
+	
+	// check whether there are linked DWGs or not
+	
+	if (linkedDWGs.Count() == 0)
+	{
+		list.Add("\nThere are no linked DWGs in this model.");
+		//Console.WriteLine("\nThere are no linked DWGs in this model.");
+	}
+	else
+	{
+		list.Add($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
+		//Console.WriteLine($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
+	}
+	
+	// check whether there are redundant instances of linked DWGs
+	
+	Dictionary<string, List<ImportInstance>> byTypeName =
+	linkedDWGs
+		.GroupBy(i =>
+		{
+			ElementType type = (ElementType)doc.GetElement(i.GetTypeId());
+			return type.Name;
+		})
+		.ToDictionary(g => g.Key, g => g.ToList());
+		
+	bool hasDuplicates = byTypeName.Any(g => g.Value.Count > 1);
+		
+	if (!hasDuplicates)
+	{
+		list.Add("No redundant linked DWGs detected on this model.");	
+		//Console.WriteLine("No redundant linked DWGs detected on this model.");
+	}
+	else
+	{	
+		list.Add("\nAction Required - Remove the redundant instances of the following linked DWGs.");
+		//Console.WriteLine("\nAction Required - Remove the redundant instances of the following linked DWGs.");
+		
+		foreach (var kvp in byTypeName)
+		{
+			if (kvp.Value.Count > 1)
+			{
+				list.Add($"\n{kvp.Value.Count} instances: {kvp.Key}\n");
+				
+				foreach (ImportInstance dwg in kvp.Value)
+				{
+					list.Add($"ElementId: {dwg.Id.IntegerValue}");
+				}
+			}
+		}				
 	}
 	
 	subsectionNumber++;
@@ -369,6 +441,14 @@ List<string> aaiStandards = new List<string>();
 
 // ═════ 4.1 DWG LINKED
 
+linkedDWGsreview(
+	projectInfo.Document, 
+	aaiStandards,
+	sectionNumber,
+	ref subsectionNumber,
+	"Linked DWGs");
+
+/*
 List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
 	.OfClass(typeof(ImportInstance))
 	.Cast<ImportInstance>()
@@ -457,6 +537,55 @@ AddInventory(
 */
 
 // ═════ 4.2 FILLED REGIONS TYPES
+
+var regions = new FilteredElementCollector(doc)
+    .OfClass(typeof(FilledRegion))
+    .Cast<FilledRegion>();
+
+int filledRegionCount = 0;
+int maskingRegionCount = 0;
+
+foreach (FilledRegion region in regions)
+{
+    FilledRegionType type = doc.GetElement(region.GetTypeId()) as FilledRegionType;
+
+    if (type != null && type.IsMasking)
+        maskingRegionCount++;
+    else
+        filledRegionCount++;
+}
+
+int totalRegionCount = filledRegionCount + maskingRegionCount;
+
+Console.WriteLine("\nFILLED REGIONS\n\n");
+
+Console.WriteLine($"Total filled regions : {totalRegionCount}");
+Console.WriteLine($"- Filled regions     : {filledRegionCount}");
+Console.WriteLine($"- Masking regions    : {maskingRegionCount}");
+
+Dictionary<ViewType, int> viewTypeCounts = new Dictionary<ViewType, int>();
+
+foreach (FilledRegion region in regions)
+{
+    View view = doc.GetElement(region.OwnerViewId) as View;
+
+    if (view == null)
+        continue;
+
+    if (!viewTypeCounts.ContainsKey(view.ViewType))
+        viewTypeCounts[view.ViewType] = 0;
+
+    viewTypeCounts[view.ViewType]++;
+}
+
+Console.WriteLine();
+Console.WriteLine("By view type");
+Console.WriteLine("------------");
+
+foreach (var kvp in viewTypeCounts.OrderBy(k => k.Key.ToString()))
+{
+    Console.WriteLine($"{kvp.Key,-22}: {kvp.Value}");
+}
 
 // ═════ FILLED REGIONS PLACED IN VIEWS PLACED IN SHEETS
 
