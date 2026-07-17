@@ -72,73 +72,7 @@ private static void AddInventory(
 
 // ═══════ LINKED DWGS METHOD
 
-private static void linkedDWGsreview(
-	Document doc,
-	List<string> list,
-	int sectionNumber,
-	ref int subsectionNumber,
-	string title)
-{
-	string prefix = $"{sectionNumber}.{subsectionNumber}";
 
-	List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
-	.OfClass(typeof(ImportInstance))
-	.Cast<ImportInstance>()
-	.Where(i => i.IsLinked)
-	.ToList();
-	
-	// check whether there are linked DWGs or not
-	
-	if (linkedDWGs.Count() == 0)
-	{
-		list.Add("\nThere are no linked DWGs in this model.");
-		//Console.WriteLine("\nThere are no linked DWGs in this model.");
-	}
-	else
-	{
-		list.Add($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
-		//Console.WriteLine($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
-	}
-	
-	// check whether there are redundant instances of linked DWGs
-	
-	Dictionary<string, List<ImportInstance>> byTypeName =
-	linkedDWGs
-		.GroupBy(i =>
-		{
-			ElementType type = (ElementType)doc.GetElement(i.GetTypeId());
-			return type.Name;
-		})
-		.ToDictionary(g => g.Key, g => g.ToList());
-		
-	bool hasDuplicates = byTypeName.Any(g => g.Value.Count > 1);
-		
-	if (!hasDuplicates)
-	{
-		list.Add("No redundant linked DWGs detected on this model.");	
-		//Console.WriteLine("No redundant linked DWGs detected on this model.");
-	}
-	else
-	{	
-		list.Add("\nAction Required - Remove the redundant instances of the following linked DWGs.");
-		//Console.WriteLine("\nAction Required - Remove the redundant instances of the following linked DWGs.");
-		
-		foreach (var kvp in byTypeName)
-		{
-			if (kvp.Value.Count > 1)
-			{
-				list.Add($"\n{kvp.Value.Count} instances: {kvp.Key}\n");
-				
-				foreach (ImportInstance dwg in kvp.Value)
-				{
-					list.Add($"ElementId: {dwg.Id.IntegerValue}");
-				}
-			}
-		}				
-	}
-	
-	subsectionNumber++;
-}
 
 // ══════════ DATA EXTRACTION AND PROCESSING
 
@@ -441,25 +375,38 @@ List<string> aaiStandards = new List<string>();
 
 // ═════ 4.1 DWG LINKED
 
-linkedDWGsreview(
-	projectInfo.Document, 
-	aaiStandards,
-	sectionNumber,
-	ref subsectionNumber,
-	"Linked DWGs");
+private static void linkedDWGsreview(
+	Document doc,
+	List<string> list,
+	int sectionNumber,
+	ref int subsectionNumber,
+	string title)
+{
+	string prefix = $"{sectionNumber}.{subsectionNumber}";
+	list.Add($"{prefix} {title}");
 
-/*
-List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
+	List<ImportInstance> linkedDWGs = new FilteredElementCollector(doc)
 	.OfClass(typeof(ImportInstance))
 	.Cast<ImportInstance>()
 	.Where(i => i.IsLinked)
 	.ToList();
 	
-// count all linked DWG instances
+	// check whether there are linked DWGs or not
 	
-// one dictionary to group by name and later check redundant instances
-
-Dictionary<string, List<ImportInstance>> byTypeName =
+	if (linkedDWGs.Count() == 0)
+	{
+		list.Add("\nThere are no linked DWGs in this model.");
+		//Console.WriteLine("\nThere are no linked DWGs in this model.");
+	}
+	else
+	{
+		list.Add($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
+		//Console.WriteLine($"\nThere are {linkedDWGs.Count} linked DWGs in this model.");
+	}
+	
+	// check whether there are redundant instances of linked DWGs
+	
+	Dictionary<string, List<ImportInstance>> byTypeName =
 	linkedDWGs
 		.GroupBy(i =>
 		{
@@ -467,125 +414,119 @@ Dictionary<string, List<ImportInstance>> byTypeName =
 			return type.Name;
 		})
 		.ToDictionary(g => g.Key, g => g.ToList());
-	
-// one dictionary to group by workset and check that the linkedDWGs
-// are placed in the correct workset
-
-Dictionary<string, List<ImportInstance>> byWorkset = linkedDWGs
-	.GroupBy( i =>
-		i.get_Parameter(BuiltInParameter.ELEM_PARTITION_PARAM)
-		?.AsValueString() ?? "<No Workset>")
-	.ToDictionary(g => g.Key, g => g.ToList());
-	
-// processing the dictionary that checks the names of the linked instances
-
-Console.WriteLine($"LINKED DWGS\n");
-
-Console.WriteLine($"Linked DWGs: {linkedDWGs.Count} instance(s)\n");
-
-Console.WriteLine("Action Required - Delete redundant instances of the following linked DWG files: ");
-
-foreach (var kvp in byTypeName)
-{
-	if (kvp.Value.Count > 1)
-	{
-		Console.WriteLine($"\n{kvp.Value.Count} instances - {kvp.Key}\n");
 		
-		foreach (ImportInstance dwg in kvp.Value)
+	bool hasDuplicates = byTypeName.Any(g => g.Value.Count > 1);
+		
+	if (!hasDuplicates)
+	{
+		list.Add("No redundant linked DWGs detected on this model.");	
+		//Console.WriteLine("No redundant linked DWGs detected on this model.");
+	}
+	else
+	{	
+		list.Add("\nAction Required - Remove the redundant instances of the following linked DWGs.");
+		//Console.WriteLine("\nAction Required - Remove the redundant instances of the following linked DWGs.");
+		
+		foreach (var kvp in byTypeName)
 		{
-			Console.WriteLine($"ElementId: {dwg.Id.IntegerValue}");
-		}
-	}	
+			if (kvp.Value.Count > 1)
+			{
+				list.Add($"\n{kvp.Value.Count} instances: {kvp.Key}\n");
+				
+				foreach (ImportInstance dwg in kvp.Value)
+				{
+					list.Add($"ElementId: {dwg.Id.IntegerValue}");
+				}
+			}
+		}				
+	}
+	
+	subsectionNumber++;
 }
 
-Console.WriteLine("\nAction Required - Ensure adequate workset naming for the following linked DWG files: ");
-
-WorksetTable worksetTable = doc.GetWorksetTable();
-
-foreach (ImportInstance dwg in linkedDWGs)
-{
-    string typeName = doc.GetElement(dwg.GetTypeId()).Name;
-    string dwgName = Path.GetFileNameWithoutExtension(typeName);
-    string worksetName = worksetTable.GetWorkset(dwg.WorksetId).Name;
-    string expectedWorkset = $"LinkCAD_{dwgName}";
-
-    if (worksetName != expectedWorkset)
-    {
-        Console.WriteLine($"\nLinked DWG: {typeName} \n- Current Workset Name:  {worksetName} \n- Expected Workset Name: {expectedWorkset}");
-    }
-}
-
-/*
-List<string> linkedDWG = new FilteredElementCollector(doc)
-	.OfClass(typeof(ImportInstance))
-	.Cast<ImportInstance>()
-	.Where(i => i.IsLinked)
-	.Select(i => doc.GetElement(i.GetTypeId()).Name)
-	.OrderBy(n => n)
-	.ToList();
-	
-var groupedLinkedDWG = linkedDWG
-	.GroupBy(name => name)
-	.OrderBy(group => group.Key);
-	
-AddInventory(
+linkedDWGsreview(
+	projectInfo.Document, 
 	aaiStandards,
 	sectionNumber,
 	ref subsectionNumber,
-	"Linked DWG Files",
-	linkedDWG);
-*/
+	"Linked DWGs");
 
 // ═════ 4.2 FILLED REGIONS TYPES
 
-var regions = new FilteredElementCollector(doc)
+private static void filledRegionsreview(
+	Document doc,
+	List<string> list,
+	int sectionNumber,
+	ref int subsectionNumber,
+	string title)
+{
+
+	string prefix = $"{sectionNumber}.{subsectionNumber}";
+	list.Add($"\n{prefix} {title}\n");
+	
+	var regions = new FilteredElementCollector(doc)
     .OfClass(typeof(FilledRegion))
     .Cast<FilledRegion>();
 
-int filledRegionCount = 0;
-int maskingRegionCount = 0;
-
-foreach (FilledRegion region in regions)
-{
-    FilledRegionType type = doc.GetElement(region.GetTypeId()) as FilledRegionType;
-
-    if (type != null && type.IsMasking)
-        maskingRegionCount++;
-    else
-        filledRegionCount++;
+	int filledRegionCount = 0;
+	int maskingRegionCount = 0;
+	
+	foreach (FilledRegion region in regions)
+	{
+	    FilledRegionType type = doc.GetElement(region.GetTypeId()) as FilledRegionType;
+	
+	    if (type != null && type.IsMasking)
+	        maskingRegionCount++;
+	    else
+	        filledRegionCount++;
+	}
+	
+	int totalRegionCount = filledRegionCount + maskingRegionCount;
+	
+	list.Add($"Total filled regions : {totalRegionCount}");
+	list.Add($"- Filled regions     : {filledRegionCount}");
+	list.Add($"- Masking regions    : {maskingRegionCount}");
+	
+	Dictionary<ViewType, int> viewTypeCounts = new Dictionary<ViewType, int>();
+	
+	foreach (FilledRegion region in regions)
+	{
+	    View view = doc.GetElement(region.OwnerViewId) as View;
+	
+	    if (view == null)
+	        continue;
+	
+	    if (!viewTypeCounts.ContainsKey(view.ViewType))
+	        viewTypeCounts[view.ViewType] = 0;
+	
+	    viewTypeCounts[view.ViewType]++;
+	}
+	
+	list.Add("");
+	list.Add("By view type");
+	list.Add("------------");
+	
+	foreach (var kvp in viewTypeCounts.OrderBy(k => k.Key.ToString()))
+	{
+	    list.Add($"{kvp.Key,-22}: {kvp.Value}");
+	}
+	
+	foreach (string line in list)
+	{
+		Console.WriteLine(line);
+	}
+	
+	subsectionNumber++;
 }
 
-int totalRegionCount = filledRegionCount + maskingRegionCount;
+filledRegionsreview(
+	projectInfo.Document, 
+	aaiStandards,
+	sectionNumber,
+	ref subsectionNumber,
+	"Filled Regions");
 
-Console.WriteLine("\nFILLED REGIONS\n\n");
 
-Console.WriteLine($"Total filled regions : {totalRegionCount}");
-Console.WriteLine($"- Filled regions     : {filledRegionCount}");
-Console.WriteLine($"- Masking regions    : {maskingRegionCount}");
-
-Dictionary<ViewType, int> viewTypeCounts = new Dictionary<ViewType, int>();
-
-foreach (FilledRegion region in regions)
-{
-    View view = doc.GetElement(region.OwnerViewId) as View;
-
-    if (view == null)
-        continue;
-
-    if (!viewTypeCounts.ContainsKey(view.ViewType))
-        viewTypeCounts[view.ViewType] = 0;
-
-    viewTypeCounts[view.ViewType]++;
-}
-
-Console.WriteLine();
-Console.WriteLine("By view type");
-Console.WriteLine("------------");
-
-foreach (var kvp in viewTypeCounts.OrderBy(k => k.Key.ToString()))
-{
-    Console.WriteLine($"{kvp.Key,-22}: {kvp.Value}");
-}
 
 // ═════ FILLED REGIONS PLACED IN VIEWS PLACED IN SHEETS
 
