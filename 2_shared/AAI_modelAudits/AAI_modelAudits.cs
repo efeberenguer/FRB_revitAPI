@@ -183,13 +183,56 @@ Header1(report, ref sectionNumber, "INFORMATION");
 	
 Header2(report, ref sectionNumber, ref subsectionNumber, "Splash Screen & Model Information");
 
+ViewSheet splashScreen = new FilteredElementCollector(doc)
+    .OfClass(typeof(ViewSheet))
+    .Cast<ViewSheet>()
+    .FirstOrDefault(s =>
+        s.Name == "ProjectSplashScreen" &&
+        s.SheetNumber == "XXXXX");
+
+var hasSplashTitleBlock = false;
+
+if (splashScreen != null)
+{
+    hasSplashTitleBlock =
+        new FilteredElementCollector(doc, splashScreen.Id)
+            .OfCategory(BuiltInCategory.OST_TitleBlocks)
+            .OfClass(typeof(FamilyInstance))
+            .Cast<FamilyInstance>()
+            .Any(tb =>
+                tb.Symbol.Family.Name ==
+                "AAI_TBK_ProjectSplashScreen");
+}
+
+string splashScreenSummary =
+    hasSplashTitleBlock ? "Splash screen is set up." : null;
+    
+ConfirmParameterValue(
+	report,
+	splashScreenSummary,
+	"Review splash screen setup.");
+
 // Subsection: Revit Version
 	
 Header2(report, ref sectionNumber, ref subsectionNumber, "Revit Version");
 
+Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
+
+ConfirmParameterValue(
+	report,
+	revitVersionParam?.AsString(),
+	"Shared parameter AAI_RevitVersion to be set up and/or populated.");
+
 // Subsection: Autodesk Desktop Connector Version
 	
 Header2(report, ref sectionNumber, ref subsectionNumber, "Autodesk Desktop Connector Version");
+
+Parameter AutodeskDesktopConnectorVersionParam = projectInfo.LookupParameter("AAI_AutodeskDesktopConnectorVersion");
+
+ConfirmParameterValue(
+	report,
+	AutodeskDesktopConnectorVersionParam?.AsString(),
+	"Shared parameter AAI_AutodeskDesktopConnectorVersion to be set up and/or populated.");
 
 // Subsection: Coordinates
 	
