@@ -19,6 +19,11 @@ report.AppendLine("<body>");
 
 report.AppendLine("<style>");
 report.AppendLine();
+report.AppendLine("@page {");
+report.AppendLine("	size: A4;");
+report.AppendLine("	margin: 20mm;");
+report.AppendLine("	}");
+report.AppendLine();
 report.AppendLine("body {");
 report.AppendLine();
 report.AppendLine("font-family: Cascadia Code;");
@@ -65,7 +70,7 @@ private static void Header2(
 ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
 // SECTION: GENERAL INFORMATION
-
+/*
 Header1(report, ref sectionNumber, "GENERAL INFORMATION");
 
 // Subsection: Model Auditor
@@ -81,7 +86,7 @@ private static void ConfirmParameterValue(
 {
 	if (string.IsNullOrWhiteSpace(parameter))
 	{
-		report.AppendLine($"Action Required: {actionRequired}");
+		report.AppendLine($"Action Required - {actionRequired}");
 	}
 	else
 	{
@@ -363,6 +368,8 @@ Header2(report,	ref sectionNumber, ref subsectionNumber, "Warnings");
 
 // Tabulated output section
 
+Header1(report, ref sectionNumber, "GENERAL INFORMATION");
+
 report.AppendLine("<table>");
 report.AppendLine("	<tr>");
 report.AppendLine("		<th colspan=\"2\"><b>1 GENERAL INFORMATION</b></th>");
@@ -400,7 +407,197 @@ report.AppendLine("		<td>Issue Date</td>");
 report.AppendLine("		<td>2026-07-22</td>");
 report.AppendLine("	</tr>");
 report.AppendLine("</table>");
+*/
 
+Header1(report, ref sectionNumber, "GENERAL INFORMATION");
+
+report.AppendLine("<table>");
+report.AppendLine("	<colgroup>");
+report.AppendLine("		<col style=\"width: 7.7%\">");
+report.AppendLine("		<col style=\"width: 46.2%\">");
+report.AppendLine("		<col style=\"width: 46.2%\">");
+report.AppendLine("	</colgroup>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th colspan=\"2\">Reference</th>");
+report.AppendLine("		<th >Output</th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.1</td>");
+report.AppendLine("		<td>Model Auditor</td>");
+report.AppendLine("		<td>Francisco Berenguer</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.2</td>");
+report.AppendLine("		<td>Project Number</td>");
+report.AppendLine("		<td>2401</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.3</td>");
+report.AppendLine("		<td>Project Name</td>");
+report.AppendLine("		<td>Tenter House</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.4</td>");
+report.AppendLine("		<td>BIM Lead</td>");
+report.AppendLine("		<td>Francisco Berenguer</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.5</td>");
+report.AppendLine("		<td>Project Manager</td>");
+report.AppendLine("		<td>Nora Ceaki</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.6</td>");
+report.AppendLine("		<td>Model analysed</td>");
+report.AppendLine("		<td>Interior and Basement</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.7</td>");
+report.AppendLine("		<td>File Size (Mb)</td>");
+report.AppendLine("		<td>256</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>1.8</td>");
+report.AppendLine("		<td>Issue Date</td>");
+report.AppendLine("		<td>2026-07-22</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+report.AppendLine("<p style=\"page-break-after: always;\">&nbsp;</p>");
+
+Header1(report, ref sectionNumber, "INFORMATION");
+
+report.AppendLine("<table>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th style=\"width:7.7%\">Reference</th>");
+report.AppendLine("		<th style=\"width:46.2%\"> </th>");
+report.AppendLine("		<th style=\"width:46.2%\">Output</th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.1</td>");
+report.AppendLine("		<td>Splash Screen & Model Information</td>");
+report.AppendLine("		<td>Set up</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.2</td>");
+report.AppendLine("		<td>Revit Version</td>");
+report.AppendLine("		<td>24.2.0.63</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.3</td>");
+report.AppendLine("		<td>Autodesk Desktop Connector Version</td>");
+report.AppendLine("		<td>17.0.1.3021</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.4</td>");
+report.AppendLine("		<td>Project Base Point Coordinates (N/S, E/W)(mm)</td>");
+report.AppendLine("		<td>181705000.0, 532725000.0</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.5</td>");
+report.AppendLine("		<td>Copy Monitor</td>");
+report.AppendLine("		<td>Set up</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>2.6</td>");
+report.AppendLine("		<td>Published Sets</td>");
+report.AppendLine("		<td>Set up</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+
+Header1(report, ref sectionNumber, "AAI STANDARDS");
+
+report.AppendLine("<table>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th style=\"width:7.7%\">Reference</th>");
+report.AppendLine("		<th style=\"width:30.8%\"> </th>");
+report.AppendLine("		<th style=\"width:30.8%\">Output</th>");
+report.AppendLine("		<th style=\"width:30.8%\">Score (%)</th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>3.1</td>");
+report.AppendLine("		<td>Linked DWGs</td>");
+report.AppendLine("		<td>1</td>");
+report.AppendLine("		<td>74.0</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>3.2</td>");
+report.AppendLine("		<td>Filled Regions</td>");
+report.AppendLine("		<td>7480</td>");
+report.AppendLine("		<td>0.1</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>3.3</td>");
+report.AppendLine("		<td>Line Patterns</td>");
+report.AppendLine("		<td>87</td>");
+report.AppendLine("		<td>4.2</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>3.3</td>");
+report.AppendLine("		<td>Line Styles</td>");
+report.AppendLine("		<td>121</td>");
+report.AppendLine("		<td>3.1</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+
+Header1(report, ref sectionNumber, "FAMILIES");
+
+report.AppendLine("<table>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th style=\"width:7.7%\">Reference</th>");
+report.AppendLine("		<th style=\"width:30.8%\"> </th>");
+report.AppendLine("		<th style=\"width:30.8%\">Output</th>");
+report.AppendLine("		<th style=\"width:30.8%\">Score (%)</th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.1</td>");
+report.AppendLine("		<td>FT Content</td>");
+report.AppendLine("		<td align=right>99</td>");
+report.AppendLine("		<td align=right>3.7</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.2</td>");
+report.AppendLine("		<td>Generic Models</td>");
+report.AppendLine("		<td align=right>4587</td>");
+report.AppendLine("		<td align=right>0.1</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.3</td>");
+report.AppendLine("		<td>Model In-Place</td>");
+report.AppendLine("		<td align=right>6</td>");
+report.AppendLine("		<td align=right>35.9</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+
+Header1(report, ref sectionNumber, "PERFORMANCE");
+
+report.AppendLine("<table>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th style=\"width:7.7%\">Reference</th>");
+report.AppendLine("		<th style=\"width:30.8%\"> </th>");
+report.AppendLine("		<th style=\"width:30.8%\">Output</th>");
+report.AppendLine("		<th style=\"width:30.8%\">Score (%)</th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.1</td>");
+report.AppendLine("		<td>Detail Groups</td>");
+report.AppendLine("		<td align=right>681</td>");
+report.AppendLine("		<td align=right>0.6</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.2</td>");
+report.AppendLine("		<td>Detail Items</td>");
+report.AppendLine("		<td align=right>9963</td>");
+report.AppendLine("		<td align=right>0.0</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>4.3</td>");
+report.AppendLine("		<td>Detail Lines</td>");
+report.AppendLine("		<td align=right>34529</td>");
+report.AppendLine("		<td align=right>0.0</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+
+Header1(report, ref sectionNumber, "OUTSTANDING ACTIONS");
 
 // Audit code ends
 
