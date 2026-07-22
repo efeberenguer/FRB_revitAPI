@@ -25,6 +25,13 @@ report.AppendLine("font-family: Cascadia Code;");
 report.AppendLine();
 report.AppendLine("}");
 report.AppendLine();
+report.AppendLine("table, th, td {");
+report.AppendLine("	border: 1px solid black;");
+report.AppendLine("	border-collapse: collapse;");
+report.AppendLine("}");
+report.AppendLine("th, td {");
+report.AppendLine("	padding: 8px;");
+report.AppendLine("}");
 report.AppendLine("</style>");
 report.AppendLine();
 
@@ -353,6 +360,47 @@ Header2(report,	ref sectionNumber, ref subsectionNumber, "Views");
 Header2(report,	ref sectionNumber, ref subsectionNumber, "Views on Sheets");
 
 Header2(report,	ref sectionNumber, ref subsectionNumber, "Warnings");
+
+// Tabulated output section
+
+report.AppendLine("<table>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<th colspan=\"2\"><b>1 GENERAL INFORMATION</b></th>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Model Auditor</td>");
+report.AppendLine("		<td>Francisco Berenguer</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Project Number</td>");
+report.AppendLine("		<td>2401</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Project Name</td>");
+report.AppendLine("		<td>Tenter House</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>BIM Lead</td>");
+report.AppendLine("		<td>Francisco Berenguer</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Project Manager</td>");
+report.AppendLine("		<td>Nora Ceaki</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Model analysed</td>");
+report.AppendLine("		<td>Interior and Basement</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>File Size</td>");
+report.AppendLine("		<td>256 Mb</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("	<tr>");
+report.AppendLine("		<td>Issue Date</td>");
+report.AppendLine("		<td>2026-07-22</td>");
+report.AppendLine("	</tr>");
+report.AppendLine("</table>");
+
 
 // Audit code ends
 
