@@ -30,13 +30,27 @@ report.AppendLine("font-family: Cascadia Code;");
 report.AppendLine();
 report.AppendLine("}");
 report.AppendLine();
-report.AppendLine("table, th, td {");
-report.AppendLine("	border: 1px solid black;");
-report.AppendLine("	border-collapse: collapse;");
+report.AppendLine("table {");
+report.AppendLine("    width: 100%;");
+report.AppendLine("    border-collapse: collapse;");
 report.AppendLine("}");
+report.AppendLine("");
 report.AppendLine("th, td {");
-report.AppendLine("	padding: 8px;");
+report.AppendLine("    padding: 6px, 8px;");
+report.AppendLine("    text-align: left;");
+report.AppendLine("");
+report.AppendLine("    border-left: none;");
+report.AppendLine("    border-right: none;");
+report.AppendLine("");
+report.AppendLine("    border-bottom: 1px solid black;");
 report.AppendLine("}");
+report.AppendLine("");
+report.AppendLine("th {");
+report.AppendLine("    border-bottom: 2px solid black;");
+report.AppendLine("}");
+report.AppendLine("tr:hover {background-color: coral;}");
+
+
 report.AppendLine("</style>");
 report.AppendLine();
 
@@ -71,180 +85,8 @@ ProjectInfo projectInfo = doc.ProjectInformation; // The Document object
 
 // SECTION: GENERAL INFORMATION
 /*
-Header1(report, ref sectionNumber, "GENERAL INFORMATION");
 
-// Subsection: Model Auditor
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Model Auditor");
 
-Parameter modelAuditorParam = projectInfo.LookupParameter("AAI_ModelAuditor");
-
-private static void ConfirmParameterValue(
-	StringBuilder report,
-	string parameter,
-	string actionRequired)
-{
-	if (string.IsNullOrWhiteSpace(parameter))
-	{
-		report.AppendLine($"Action Required - {actionRequired}");
-	}
-	else
-	{
-		report.AppendLine($"{parameter}");
-	}
-}
-
-ConfirmParameterValue(
-	report,
-	modelAuditorParam?.AsString(),
-	"Shared parameter AAI_ModelAuditor to be set up and/or populated.");
-	
-// Subsection: Project Number
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Project Number");
-
-ConfirmParameterValue(
-	report,
-	projectInfo.Number,
-	"Project Number to be populated.");
-	
-// Subsection: Project Name
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Project Name");
-
-ConfirmParameterValue(
-	report,
-	projectInfo.Name,
-	"Project Name to be populated.");
-	
-// Subsection: BIM Lead
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "BIM Lead");
-
-Parameter BIMLeadParam = projectInfo.LookupParameter("AAI_BIMLead");
-
-ConfirmParameterValue(
-	report,
-	BIMLeadParam?.AsString(),
-	"Shared parameter AAI_BIMLead to be set up and/or populated.");
-	
-// Subsection: Project Lead
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Project Lead");
-
-Parameter projectLeadParam = projectInfo.LookupParameter("AAI_ProjectLead");
-
-ConfirmParameterValue(
-	report,
-	projectLeadParam?.AsString(),
-	"Shared parameter AAI_ProjectLead to be set up and/or populated.");
-
-// Subsection: Model Description
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Model Description");
-
-Parameter modelDescriptionParam = projectInfo.LookupParameter("AAI_ModelDescription");
-
-ConfirmParameterValue(
-	report,
-	modelDescriptionParam?.AsString(),
-	"Shared parameter AAI_ModelDescription to be set up and/or populated.");
-
-// Subsection: File Name
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "File Name");
-
-ConfirmParameterValue(
-	report,
-	doc.Title,
-	" ");
-
-// Subsection: File Size
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "File Size");
-
-Parameter fileSizeParam = projectInfo.LookupParameter("AAI_FileSize");
-
-ConfirmParameterValue(
-	report,
-	fileSizeParam?.AsString(),
-	"Shared parameter AAI_FileSize to be set up and/or populated.");
-
-// Subsection: Issue Date
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Issue Date");
-
-DateTime today = DateTime.Today; // Returns the current date
-string YYYY = today.ToString("yyyy");
-string MM = today.ToString("MM");
-string DD = today.ToString("dd");
-string issueDate = YYYY + "-" + MM + "-" + DD;
-
-ConfirmParameterValue(
-	report,
-	issueDate,
-	" ");
-
-subsectionNumber = 0;
-
-// SECTION: INFORMATION
-
-Header1(report, ref sectionNumber, "INFORMATION");
-
-// Subsection: Splash Screen & Model Information
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Splash Screen & Model Information");
-
-ViewSheet splashScreen = new FilteredElementCollector(doc)
-    .OfClass(typeof(ViewSheet))
-    .Cast<ViewSheet>()
-    .FirstOrDefault(s =>
-        s.Name == "ProjectSplashScreen" &&
-        s.SheetNumber == "XXXXX");
-
-var hasSplashTitleBlock = false;
-
-if (splashScreen != null)
-{
-    hasSplashTitleBlock =
-        new FilteredElementCollector(doc, splashScreen.Id)
-            .OfCategory(BuiltInCategory.OST_TitleBlocks)
-            .OfClass(typeof(FamilyInstance))
-            .Cast<FamilyInstance>()
-            .Any(tb =>
-                tb.Symbol.Family.Name ==
-                "AAI_TBK_ProjectSplashScreen");
-}
-
-string splashScreenSummary =
-    hasSplashTitleBlock ? "Splash screen is set up." : null;
-    
-ConfirmParameterValue(
-	report,
-	splashScreenSummary,
-	"Review splash screen setup.");
-
-// Subsection: Revit Version
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Revit Version");
-
-Parameter revitVersionParam = projectInfo.LookupParameter("AAI_RevitVersion");
-
-ConfirmParameterValue(
-	report,
-	revitVersionParam?.AsString(),
-	"Shared parameter AAI_RevitVersion to be set up and/or populated.");
-
-// Subsection: Autodesk Desktop Connector Version
-	
-Header2(report, ref sectionNumber, ref subsectionNumber, "Autodesk Desktop Connector Version");
-
-Parameter AutodeskDesktopConnectorVersionParam = projectInfo.LookupParameter("AAI_AutodeskDesktopConnectorVersion");
-
-ConfirmParameterValue(
-	report,
-	AutodeskDesktopConnectorVersionParam?.AsString(),
-	"Shared parameter AAI_AutodeskDesktopConnectorVersion to be set up and/or populated.");
 
 // Subsection: Coordinates
 	
@@ -260,233 +102,262 @@ Header2(report, ref sectionNumber, ref subsectionNumber, "Published Sets");
 
 subsectionNumber = 0;
 
-// SECTION: AAI STANDARDS
-
-Header1(report,	ref sectionNumber, "AAI STANDARDS");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "DWG Linked");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Filled Regions");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Line Patterns");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Line Styles");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Materials");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Naming Convention");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Object Styles");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Phases");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Project Browser");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Revit Links");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Revisions");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Sheet Issued Revisions");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Worksets");
-
-subsectionNumber = 0;
-
-// SECTION: FAMILIES
-
-Header1(report,	ref sectionNumber, "FAMILIES");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "FT Content");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Generic Models");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Model In-Place");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Shared Parameters");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Largest Family Size");
-
-subsectionNumber = 0;
-
-// SECTION: PERFORMANCE
-
-Header1(report,	ref sectionNumber, "PERFORMANCE");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Areas");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Design Options");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Design Options Set");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Detail Groups");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Detail Items");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Detail Lines");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "DWG Imported");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Filters");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Grids");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Images");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Levels");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Loadable Families");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Model Groups");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Model Health");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Model Lines");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Purge Elements");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Reference Planes");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Rooms");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Schedules");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Scope Boxes");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Sheets");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Tags");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Text Notes");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "View Templates");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Views");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Views on Sheets");
-
-Header2(report,	ref sectionNumber, ref subsectionNumber, "Warnings");
-
-// Tabulated output section
-
-Header1(report, ref sectionNumber, "GENERAL INFORMATION");
-
-report.AppendLine("<table>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<th colspan=\"2\"><b>1 GENERAL INFORMATION</b></th>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Model Auditor</td>");
-report.AppendLine("		<td>Francisco Berenguer</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Project Number</td>");
-report.AppendLine("		<td>2401</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Project Name</td>");
-report.AppendLine("		<td>Tenter House</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>BIM Lead</td>");
-report.AppendLine("		<td>Francisco Berenguer</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Project Manager</td>");
-report.AppendLine("		<td>Nora Ceaki</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Model analysed</td>");
-report.AppendLine("		<td>Interior and Basement</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>File Size</td>");
-report.AppendLine("		<td>256 Mb</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>Issue Date</td>");
-report.AppendLine("		<td>2026-07-22</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("</table>");
 */
 
 Header1(report, ref sectionNumber, "GENERAL INFORMATION");
 
+private static void CStoHTMLTableTypeAHeader(
+	StringBuilder report)
+{
+	report.AppendLine("<tr>");
+	report.AppendLine("		<th colspan=\"2\">Reference</th>");
+	report.AppendLine("		<th >Output</th>");
+	report.AppendLine("</tr>");
+}
+
 report.AppendLine("<table>");
-report.AppendLine("	<colgroup>");
+report.AppendLine("<colgroup>");
 report.AppendLine("		<col style=\"width: 7.7%\">");
 report.AppendLine("		<col style=\"width: 46.2%\">");
 report.AppendLine("		<col style=\"width: 46.2%\">");
-report.AppendLine("	</colgroup>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<th colspan=\"2\">Reference</th>");
-report.AppendLine("		<th >Output</th>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.1</td>");
-report.AppendLine("		<td>Model Auditor</td>");
-report.AppendLine("		<td>Francisco Berenguer</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.2</td>");
-report.AppendLine("		<td>Project Number</td>");
-report.AppendLine("		<td>2401</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.3</td>");
-report.AppendLine("		<td>Project Name</td>");
-report.AppendLine("		<td>Tenter House</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.4</td>");
-report.AppendLine("		<td>BIM Lead</td>");
-report.AppendLine("		<td>Francisco Berenguer</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.5</td>");
-report.AppendLine("		<td>Project Manager</td>");
-report.AppendLine("		<td>Nora Ceaki</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.6</td>");
-report.AppendLine("		<td>Model analysed</td>");
-report.AppendLine("		<td>Interior and Basement</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.7</td>");
-report.AppendLine("		<td>File Size (Mb)</td>");
-report.AppendLine("		<td>256</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>1.8</td>");
-report.AppendLine("		<td>Issue Date</td>");
-report.AppendLine("		<td>2026-07-22</td>");
-report.AppendLine("	</tr>");
+report.AppendLine("</colgroup>");
+
+CStoHTMLTableTypeAHeader(report);
+
+private static void WriteValueCheck(
+	StringBuilder report,
+	ref int sectionNumber,
+	ref int subsectionNumber,
+	string reference,
+	string value,
+	string actionRequired)
+{
+	string output = string.IsNullOrWhiteSpace(value)
+		? $"Action Required → {actionRequired}"
+		: value;
+		
+	subsectionNumber++;
+	
+	report.AppendLine("<tr>");
+	report.AppendLine($"		<td>{sectionNumber}.{subsectionNumber}</td>");
+	report.AppendLine($"		<td>{reference}</td>");
+	report.AppendLine($"		<td>{output}</td>");
+	report.AppendLine("</tr>");
+}
+
+private static void WriteParameterCheck(
+	StringBuilder report,
+	ref int sectionNumber,
+	ref int subsectionNumber,
+	Element element,
+	string parameterName,
+	string reference,
+	string actionRequired)
+{
+	Parameter p = element.LookupParameter(parameterName);
+	
+	WriteValueCheck(
+		report,
+		ref sectionNumber,
+		ref subsectionNumber,
+		reference,
+		p?.AsString(),
+		actionRequired);
+}
+
+// Model Auditor
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_ModelAuditor",
+	"Model Auditor",
+	"Confirm that the shared parameter AAI_ModelAuditor is set up and populated.");
+
+// Project Number
+
+WriteValueCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	"Project Number",
+	projectInfo.Number,
+	"Project Number to be populated.");
+	
+// Project Name
+
+WriteValueCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	"Project Name",
+	projectInfo.Name,
+	"Project Name to be populated.");
+	
+// BIM Lead
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_BIMLead",
+	"BIM Lead",
+	"Confirm that the shared parameter AAI_BIMLead is set up and populated.");
+
+// Project Manager
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_ProjectManager",
+	"Project Manager",
+	"Confirm that the shared parameter AAI_ProjectManager is set up and populated.");
+	
+// Model Description
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_ModelDescription",
+	"Model Description",
+	"Confirm that the shared parameter AAI_ModelDescription is set up and populated.");
+	
+// File Size
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_FileSize",
+	"File Size (Mb)",
+	"Confirm that the shared parameter AAI_FileSize is set up and populated.");
+	
+// Issue Date
+
+private static void DateCheck(
+	StringBuilder report,
+	ref int sectionNumber,
+	ref int subsectionNumber,
+	string reference)
+{
+	DateTime today = DateTime.Today; // Returns the current date
+	string YYYY = today.ToString("yyyy");
+	string MM = today.ToString("MM");
+	string DD = today.ToString("dd");
+	string output = YYYY + "-" + MM + "-" + DD;
+			
+	subsectionNumber++;
+	
+	report.AppendLine("<tr>");
+	report.AppendLine($"		<td>{sectionNumber}.{subsectionNumber}</td>");
+	report.AppendLine($"		<td>{reference}</td>");
+	report.AppendLine($"		<td>{output}</td>");
+	report.AppendLine("</tr>");
+}
+
+DateCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	"Issue Date");
+
 report.AppendLine("</table>");
 report.AppendLine("<p style=\"page-break-after: always;\">&nbsp;</p>");
+
+subsectionNumber = 0;
 
 Header1(report, ref sectionNumber, "INFORMATION");
 
 report.AppendLine("<table>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<th style=\"width:7.7%\">Reference</th>");
-report.AppendLine("		<th style=\"width:46.2%\"> </th>");
-report.AppendLine("		<th style=\"width:46.2%\">Output</th>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>2.1</td>");
-report.AppendLine("		<td>Splash Screen & Model Information</td>");
-report.AppendLine("		<td>Set up</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>2.2</td>");
-report.AppendLine("		<td>Revit Version</td>");
-report.AppendLine("		<td>24.2.0.63</td>");
-report.AppendLine("	</tr>");
-report.AppendLine("	<tr>");
-report.AppendLine("		<td>2.3</td>");
-report.AppendLine("		<td>Autodesk Desktop Connector Version</td>");
-report.AppendLine("		<td>17.0.1.3021</td>");
-report.AppendLine("	</tr>");
+report.AppendLine("<colgroup>");
+report.AppendLine("		<col style=\"width: 7.7%\">");
+report.AppendLine("		<col style=\"width: 46.2%\">");
+report.AppendLine("		<col style=\"width: 46.2%\">");
+report.AppendLine("</colgroup>");
+report.AppendLine("<tr>");
+report.AppendLine("		<th colspan=\"2\">Reference</th>");
+report.AppendLine("		<th >Output</th>");
+report.AppendLine("</tr>");
+
+// Splash Screen
+
+private static void SplashScreenCheck(
+	Document doc,
+	StringBuilder report,
+	ref int sectionNumber,
+	ref int subsectionNumber,
+	string reference)
+{
+	ViewSheet splashScreen = new FilteredElementCollector(doc)
+	    .OfClass(typeof(ViewSheet))
+	    .Cast<ViewSheet>()
+	    .FirstOrDefault(s =>
+	        s.Name == "ProjectSplashScreen" &&
+	        s.SheetNumber == "XXXXX");
+	
+	var hasSplashTitleBlock = false;
+	
+	if (splashScreen != null)
+	{
+	    hasSplashTitleBlock =
+	        new FilteredElementCollector(doc, splashScreen.Id)
+	            .OfCategory(BuiltInCategory.OST_TitleBlocks)
+	            .OfClass(typeof(FamilyInstance))
+	            .Cast<FamilyInstance>()
+	            .Any(tb =>
+	                tb.Symbol.Family.Name ==
+	                "AAI_TBK_ProjectSplashScreen");
+	}
+	
+	string output =
+	    hasSplashTitleBlock ? "Set Up" : "Action Required → Review Splash Screen setup.";
+	
+	subsectionNumber++;
+	
+	report.AppendLine("<tr>");
+	report.AppendLine($"		<td>{sectionNumber}.{subsectionNumber}</td>");
+	report.AppendLine($"		<td>{reference}</td>");
+	report.AppendLine($"		<td>{output}</td>");
+	report.AppendLine("</tr>");
+}
+
+SplashScreenCheck(
+	doc,
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	"Splash Screen & Model Information");
+	
+// Revit version
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_RevitVersion",
+	"Revit Version",
+	"Confirm that the shared parameter AAI_RevitVersion is set up and populated.");
+	
+// Autodesk Desktop Connector version
+
+WriteParameterCheck(
+	report,
+	ref sectionNumber,
+	ref subsectionNumber,
+	projectInfo,
+	"AAI_AutodeskDesktopConnectorVersion",
+	"Dekstop Connector Version",
+	"Confirm that the shared parameter AAI_AutodeskDesktopConnectorVersion is set up and populated.");
+
 report.AppendLine("	<tr>");
 report.AppendLine("		<td>2.4</td>");
 report.AppendLine("		<td>Project Base Point Coordinates (N/S, E/W)(mm)</td>");
