@@ -82,6 +82,9 @@ List<Revision> unusedRevisions =
             !revisionUsage.ContainsKey(revision.Id))
         .ToList();
 
+int usedRevisionCount =
+    allRevisions.Count - unusedRevisions.Count;
+
 // ------------------------------------------------------------
 // 6. Create CSV
 // ------------------------------------------------------------
@@ -104,8 +107,72 @@ csv.AppendLine(
 csv.AppendLine();
 
 // ------------------------------------------------------------
-// Column headers
+// Summary
 // ------------------------------------------------------------
+
+csv.AppendLine("SUMMARY");
+
+csv.AppendLine(
+    $"{CsvEscape("Qualifying Sheets")};" +
+    $"{qualifyingSheets.Count}");
+
+csv.AppendLine(
+    $"{CsvEscape("Revisions in Model")};" +
+    $"{allRevisions.Count}");
+
+csv.AppendLine(
+    $"{CsvEscape("Used Revisions")};" +
+    $"{usedRevisionCount}");
+
+csv.AppendLine(
+    $"{CsvEscape("Unused Revisions")};" +
+    $"{unusedRevisions.Count}");
+
+csv.AppendLine();
+
+// ------------------------------------------------------------
+// Unused revisions
+// ------------------------------------------------------------
+
+csv.AppendLine("UNUSED REVISIONS");
+
+csv.AppendLine(
+    "Revision Number;" +
+    "Revision Date;" +
+    "Description");
+
+if (unusedRevisions.Count == 0)
+{
+    csv.AppendLine(
+        "None;;");
+}
+else
+{
+    foreach (Revision revision in unusedRevisions)
+    {
+        string revisionNumber =
+            revision.SequenceNumber.ToString();
+
+        string revisionDate =
+            revision.RevisionDate ?? "";
+
+        string description =
+            revision.Description ?? "";
+
+        csv.AppendLine(
+            $"{CsvEscape(revisionNumber)};" +
+            $"{CsvEscape(revisionDate)};" +
+            $"{CsvEscape(description)}");
+    }
+}
+
+csv.AppendLine();
+
+// ------------------------------------------------------------
+// Full revision usage
+// ------------------------------------------------------------
+
+csv.AppendLine("REVISION USAGE");
 
 csv.AppendLine(
     "Revision Number;" +
@@ -114,10 +181,6 @@ csv.AppendLine(
     "Sheet Number;" +
     "Sheet Name;" +
     "Status");
-
-// ------------------------------------------------------------
-// Revision data
-// ------------------------------------------------------------
 
 foreach (Revision revision in allRevisions)
 {
@@ -195,17 +258,14 @@ File.WriteAllText(
     Encoding.UTF8);
 
 // ------------------------------------------------------------
-// 8. Display summary
+// 8. Display completion dialog
 // ------------------------------------------------------------
 
 StringBuilder report =
     new StringBuilder();
 
 report.AppendLine(
-    "REVISION CHECK");
-
-report.AppendLine(
-    "==============");
+    "REVISION CHECK COMPLETE");
 
 report.AppendLine();
 
@@ -213,55 +273,12 @@ report.AppendLine(
     $"Model: {modelName}");
 
 report.AppendLine(
-    $"Check: {checkTimestamp}");
+    $"Unused revisions: {unusedRevisions.Count}");
 
 report.AppendLine();
 
 report.AppendLine(
-    $"Qualifying sheets: {qualifyingSheets.Count}");
-
-report.AppendLine(
-    $"Revisions in model: {allRevisions.Count}");
-
-report.AppendLine(
-    $"Used revisions: " +
-    $"{allRevisions.Count - unusedRevisions.Count}");
-
-report.AppendLine(
-    $"Unused revisions: " +
-    $"{unusedRevisions.Count}");
-
-report.AppendLine();
-
-if (unusedRevisions.Count > 0)
-{
-    report.AppendLine(
-        "UNUSED REVISIONS");
-
-    report.AppendLine(
-        "----------------");
-
-    foreach (Revision revision in unusedRevisions)
-    {
-        report.AppendLine(
-            $"Revision {revision.SequenceNumber} | " +
-            $"{revision.RevisionDate} | " +
-            $"{revision.Description}");
-    }
-}
-else
-{
-    report.AppendLine(
-        "No unused revisions found.");
-}
-
-report.AppendLine();
-
-report.AppendLine(
-    "CSV REPORT");
-
-report.AppendLine(
-    "----------");
+    "CSV report saved to:");
 
 report.AppendLine(
     filePath);
@@ -280,10 +297,9 @@ string CsvEscape(string value)
     if (value == null)
         return "";
 
-    // A semicolon is the CSV delimiter.
-    // Quotes are escaped by doubling them.
+    // The CSV delimiter is a semicolon.
     // Fields containing semicolons, quotes, or line breaks
-    // are enclosed in double quotes.
+    // must be enclosed in double quotes.
 
     bool requiresQuotes =
         value.Contains(";") ||
@@ -291,6 +307,7 @@ string CsvEscape(string value)
         value.Contains("\r") ||
         value.Contains("\n");
 
+    // Escape quotation marks by doubling them.
     if (value.Contains("\""))
     {
         value = value.Replace(
