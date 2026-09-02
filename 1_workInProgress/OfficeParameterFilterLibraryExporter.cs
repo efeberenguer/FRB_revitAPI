@@ -192,6 +192,122 @@ Func<ElementId, string> GetParameterGuid = parameterId =>
     return null;
 };
 
+// ============================================================
+// PORTABLE PARAMETER IDENTITY
+//
+// IMPORTANT:
+// Revit ElementId is retained as metadata, but is NOT used as
+// the canonical identity for shared/project parameters.
+//
+// Built-in:
+//     BIP:-1002001
+//
+// Shared:
+//     GUID:f04b438c-dac0-4e90-853e-d87712fdcc27
+//
+// Project:
+//     PROJECT:My Parameter
+//
+// Other:
+//     NAME:My Parameter
+// ============================================================
+
+Func<ElementId, string> GetParameterKey = parameterId =>
+{
+    if (parameterId == null)
+        return "UNKNOWN";
+
+
+    // --------------------------------------------------------
+    // Built-in parameter
+    // Negative IDs are stable Revit built-in identities.
+    // --------------------------------------------------------
+
+    if (parameterId.IntegerValue < 0)
+    {
+        return
+            "BIP:" +
+            parameterId.IntegerValue.ToString(
+                System.Globalization.CultureInfo.InvariantCulture
+            );
+    }
+
+
+    try
+    {
+        Element e = doc.GetElement(parameterId);
+
+
+        // ----------------------------------------------------
+        // Shared parameter
+        // GUID is the portable identity.
+        // ----------------------------------------------------
+
+        SharedParameterElement spe =
+            e as SharedParameterElement;
+
+        if (spe != null)
+        {
+            return
+                "GUID:" +
+                spe.GuidValue
+                    .ToString()
+                    .ToLowerInvariant();
+        }
+
+
+        // ----------------------------------------------------
+        // Project parameter
+        //
+        // Revit does not give these a shared GUID.
+        // For V1 we therefore use the parameter name as the
+        // portable fallback identity.
+        //
+        // Raw ElementId is still exported separately.
+        // ----------------------------------------------------
+
+        ParameterElement pe =
+            e as ParameterElement;
+
+        if (pe != null)
+        {
+            return
+                "PROJECT:" +
+                (pe.Name ?? "")
+                    .Trim();
+        }
+
+
+        // ----------------------------------------------------
+        // Other resolvable parameter element
+        // ----------------------------------------------------
+
+        if (e != null)
+        {
+            return
+                "NAME:" +
+                (e.Name ?? "")
+                    .Trim();
+        }
+    }
+    catch
+    {
+    }
+
+
+    // --------------------------------------------------------
+    // Last-resort fallback.
+    //
+    // This is deliberately marked LOCAL because it cannot be
+    // assumed portable between RVT files.
+    // --------------------------------------------------------
+
+    return
+        "LOCAL:" +
+        parameterId.IntegerValue.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+};
 
 // ============================================================
 // REFLECTION HELPERS
@@ -429,6 +545,124 @@ BuildRuleSignature = (rule, inheritedInverse) =>
 
     Type type = rule.GetType();
 
+
+    // --------------------------------------------------------
+    // Inverse wrapper
+    //
+    // Normalize the inverse into the resulting operator.
+    // --------------------------------------------------------
+
+    if (rule is FilterInverseRule)
+    {
+        FilterRule inner =
+            InvokeNoArg(
+                rule,
+                "GetInnerRule"
+            ) as FilterRule;
+
+        return BuildRuleSignature(
+            inner,
+            !inheritedInverse
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Category rule
+    // --------------------------------------------------------
+
+    if (type.Name == "FilterCategoryRule")
+    {
+        List<int> ids =
+            GetCategoryRuleIds(rule);
+
+        return
+            "CATEGORY_RULE|" +
+            string.Join(
+                ",",
+                ids.Select(
+                    x => x.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture
+                    )
+                )
+            );
+    }
+
+
+    // --------------------------------------------------------
+    // Parameter
+    // --------------------------------------------------------
+
+    ElementId parameterId =
+        InvokeNoArg(
+            rule,
+            "GetRuleParameter"
+        ) as ElementId;
+
+
+    string parameterKey =
+        GetParameterKey(parameterId);
+
+
+    // --------------------------------------------------------
+    // Evaluator
+    // --------------------------------------------------------
+
+    object evaluator =
+        InvokeNoArg(
+            rule,
+            "GetEvaluator"
+        );
+
+    string evaluatorName =
+        evaluator != null
+        ? evaluator.GetType().Name
+        : null;
+
+
+    string operatorName =
+        NormalizeOperator(
+            evaluatorName,
+            inheritedInverse
+        );
+
+
+    // --------------------------------------------------------
+    // Value
+    // --------------------------------------------------------
+
+    object value =
+        GetRuleValue(rule);
+
+    string rawValue =
+        RawValueText(value);
+
+
+    // --------------------------------------------------------
+    // CANONICAL RULE SIGNATURE
+    //
+    // NOTE:
+    // parameterId is intentionally NOT used here.
+    // --------------------------------------------------------
+
+    return string.Join(
+        "|",
+        new string[]
+        {
+            "RULE",
+            type.Name,
+            "PARAM=" + parameterKey,
+            "OP=" + (operatorName ?? ""),
+            "VALUE=" + (rawValue ?? "")
+        }
+    );
+};BuildRuleSignature = (rule, inheritedInverse) =>
+{
+    if (rule == null)
+        return "NULL_RULE";
+
+    Type type = rule.GetType();
+
     // --------------------------------------------------------
     // Inverse wrapper
     // --------------------------------------------------------
@@ -568,7 +802,9 @@ RuleToJson = (rule, inheritedInverse) =>
 
     string parameterGuid =
         GetParameterGuid(parameterId);
-
+        
+	string parameterKey =
+	    GetParameterKey(parameterId);
 
     object evaluator =
         InvokeNoArg(rule, "GetEvaluator");
@@ -660,6 +896,12 @@ RuleToJson = (rule, inheritedInverse) =>
         ) +
         ","
     );
+    
+    sb.Append(
+	    "\"parameterKey\":" +
+	    JString(parameterKey) +
+	    ","
+	);
 
     sb.Append(
         "\"parameterName\":" +
@@ -979,7 +1221,7 @@ try
     json.AppendLine("{");
 
     json.AppendLine(
-        "  \"schemaVersion\": \"1.0\","
+        "  \"schemaVersion\": \"1.1\","
     );
 
     json.AppendLine(
