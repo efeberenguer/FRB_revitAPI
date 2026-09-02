@@ -1,81 +1,133 @@
-using Autodesk.Revit.DB;
-using Autodesk.Revit.UI;
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
-// ============================================================
-// REVIT 2024 - OFFICE PARAMETER FILTER LIBRARY EXPORTER
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+
+
+// ============================================================================
+// OFFICE PARAMETER FILTER LIBRARY EXPORTER
+// Revit 2024 / Launchpad
 //
-// READ ONLY
-// No Transaction
-// No model modification
+// READ ONLY:
+// - No transaction
+// - Does not modify the RVT
 //
-// OUTPUT:
-// Desktop\Office_Filter_Library_yyyy.MM.json
-//
-// Assumes ArchSmarter Launchpad exposes:
+// Assumption:
+// Launchpad provides:
 //     Document doc
-// ============================================================
+//
+// Output:
+//     Desktop\Office_Filter_Library_yyyy.MM.json
+//
+// Schema:
+//     1.1
+//
+// Canonical parameter identity:
+//     Built-in parameter : BIP:<integer id>
+//     Shared parameter   : GUID:<guid>
+//     Project parameter  : PROJECT:<name>
+//     Other              : NAME:<name>
+//     Last resort        : LOCAL:<element id>
+//
+// IMPORTANT:
+// Raw ElementIds are retained in JSON for diagnostics,
+// but are NOT used for shared/project-parameter matching.
+// ============================================================================
 
 
-// ============================================================
-// CONFIGURATION
-// ============================================================
-
-string libraryVersion = DateTime.Now.ToString("yyyy.MM");
+// ============================================================================
+// SETTINGS
+// ============================================================================
 
 string libraryName = "Office Parameter Filter Library";
+string libraryVersion = DateTime.Now.ToString("yyyy.MM");
 
-string outputPath = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-    "Office_Filter_Library_" + libraryVersion + ".json"
-);
+string desktop =
+    Environment.GetFolderPath(
+        Environment.SpecialFolder.DesktopDirectory
+    );
+
+string outputPath =
+    Path.Combine(
+        desktop,
+        "Office_Filter_Library_" +
+        libraryVersion +
+        ".json"
+    );
 
 
-// ============================================================
-// BASIC HELPERS
-// ============================================================
+// ============================================================================
+// BASIC JSON HELPERS
+// ============================================================================
 
-Func<string, string> JsonEscape = value =>
+Func<string, string> JsonEscape = delegate(string value)
 {
     if (value == null)
-        return "";
+        return null;
 
-    StringBuilder s = new StringBuilder();
+    StringBuilder sb = new StringBuilder();
 
     foreach (char c in value)
     {
         switch (c)
         {
-            case '\\': s.Append("\\\\"); break;
-            case '"':  s.Append("\\\""); break;
-            case '\b': s.Append("\\b"); break;
-            case '\f': s.Append("\\f"); break;
-            case '\n': s.Append("\\n"); break;
-            case '\r': s.Append("\\r"); break;
-            case '\t': s.Append("\\t"); break;
+            case '"':
+                sb.Append("\\\"");
+                break;
+
+            case '\\':
+                sb.Append("\\\\");
+                break;
+
+            case '\b':
+                sb.Append("\\b");
+                break;
+
+            case '\f':
+                sb.Append("\\f");
+                break;
+
+            case '\n':
+                sb.Append("\\n");
+                break;
+
+            case '\r':
+                sb.Append("\\r");
+                break;
+
+            case '\t':
+                sb.Append("\\t");
+                break;
 
             default:
                 if (c < 32)
-                    s.Append("\\u" + ((int)c).ToString("x4"));
+                {
+                    sb.Append(
+                        "\\u" +
+                        ((int)c).ToString("x4")
+                    );
+                }
                 else
-                    s.Append(c);
+                {
+                    sb.Append(c);
+                }
                 break;
         }
     }
 
-    return s.ToString();
+    return sb.ToString();
 };
 
 
-Func<string, string> JString = value =>
+Func<string, string> JString = delegate(string value)
 {
     if (value == null)
         return "null";
@@ -84,58 +136,175 @@ Func<string, string> JString = value =>
 };
 
 
-Func<bool, string> JBool = value =>
+Func<bool, string> JBool = delegate(bool value)
 {
     return value ? "true" : "false";
 };
 
 
-Func<string, string> Sha256 = text =>
+// ============================================================================
+// REFLECTION HELPERS
+//
+// Reflection is used deliberately for rule subclasses because Revit exposes
+// rule-specific values through different methods.
+// ============================================================================
+
+Func<object, string, object> InvokeNoArg =
+    delegate(object target, string methodName)
 {
+    if (target == null)
+        return null;
+
+    try
+    {
+        MethodInfo method =
+            target
+                .GetType()
+                .GetMethod(
+                    methodName,
+                    BindingFlags.Instance |
+                    BindingFlags.Public
+                );
+
+        if (method == null)
+            return null;
+
+        return method.Invoke(
+            target,
+            null
+        );
+    }
+    catch
+    {
+        return null;
+    }
+};
+
+
+Func<object, string, object> GetPublicProperty =
+    delegate(object target, string propertyName)
+{
+    if (target == null)
+        return null;
+
+    try
+    {
+        PropertyInfo property =
+            target
+                .GetType()
+                .GetProperty(
+                    propertyName,
+                    BindingFlags.Instance |
+                    BindingFlags.Public
+                );
+
+        if (property == null)
+            return null;
+
+        return property.GetValue(
+            target,
+            null
+        );
+    }
+    catch
+    {
+        return null;
+    }
+};
+
+
+// ============================================================================
+// SHA-256
+// ============================================================================
+
+Func<string, string> Sha256 = delegate(string value)
+{
+    if (value == null)
+        value = "";
+
     using (SHA256 sha = SHA256.Create())
     {
-        byte[] bytes = Encoding.UTF8.GetBytes(text ?? "");
-        byte[] hash = sha.ComputeHash(bytes);
+        byte[] bytes =
+            Encoding.UTF8.GetBytes(value);
 
-        StringBuilder sb = new StringBuilder();
+        byte[] hash =
+            sha.ComputeHash(bytes);
+
+        StringBuilder sb =
+            new StringBuilder();
 
         foreach (byte b in hash)
-            sb.Append(b.ToString("x2"));
+        {
+            sb.Append(
+                b.ToString("x2")
+            );
+        }
 
         return sb.ToString();
     }
 };
 
 
-// ============================================================
-// PARAMETER INFORMATION
-// ============================================================
+// ============================================================================
+// PARAMETER METADATA
+// ============================================================================
 
-Func<ElementId, string> GetParameterName = parameterId =>
+Func<ElementId, string> GetParameterName =
+    delegate(ElementId parameterId)
 {
     if (parameterId == null)
         return null;
 
-    try
+    if (
+        parameterId == ElementId.InvalidElementId ||
+        parameterId.IntegerValue == -1
+    )
     {
-        Element e = doc.GetElement(parameterId);
-
-        if (e != null && !string.IsNullOrWhiteSpace(e.Name))
-            return e.Name;
-    }
-    catch
-    {
+        return null;
     }
 
-    try
+
+    // ------------------------------------------------------------------------
+    // Built-in parameter
+    // ------------------------------------------------------------------------
+
+    if (parameterId.IntegerValue < 0)
     {
-        if (parameterId.IntegerValue < 0)
+        try
         {
             BuiltInParameter bip =
-                (BuiltInParameter)parameterId.IntegerValue;
+                (BuiltInParameter)
+                parameterId.IntegerValue;
 
-            return LabelUtils.GetLabelFor(bip);
+            string label =
+                LabelUtils.GetLabelFor(bip);
+
+            if (!string.IsNullOrWhiteSpace(label))
+                return label;
         }
+        catch
+        {
+        }
+
+        return
+            parameterId.IntegerValue
+                .ToString(
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Parameter element
+    // ------------------------------------------------------------------------
+
+    try
+    {
+        Element element =
+            doc.GetElement(parameterId);
+
+        if (element != null)
+            return element.Name;
     }
     catch
     {
@@ -145,26 +314,32 @@ Func<ElementId, string> GetParameterName = parameterId =>
 };
 
 
-Func<ElementId, string> GetParameterSource = parameterId =>
+Func<ElementId, string> GetParameterSource =
+    delegate(ElementId parameterId)
 {
     if (parameterId == null)
         return "Other";
+
+    if (
+        parameterId == ElementId.InvalidElementId ||
+        parameterId.IntegerValue == -1
+    )
+    {
+        return "Other";
+    }
 
     if (parameterId.IntegerValue < 0)
         return "Built-in";
 
     try
     {
-        Element e = doc.GetElement(parameterId);
+        Element element =
+            doc.GetElement(parameterId);
 
-        SharedParameterElement spe = e as SharedParameterElement;
-
-        if (spe != null)
+        if (element is SharedParameterElement)
             return "Shared";
 
-        ParameterElement pe = e as ParameterElement;
-
-        if (pe != null)
+        if (element is ParameterElement)
             return "Project";
     }
     catch
@@ -175,15 +350,28 @@ Func<ElementId, string> GetParameterSource = parameterId =>
 };
 
 
-Func<ElementId, string> GetParameterGuid = parameterId =>
+Func<ElementId, string> GetParameterGuid =
+    delegate(ElementId parameterId)
 {
+    if (parameterId == null)
+        return null;
+
+    if (parameterId.IntegerValue < 0)
+        return null;
+
     try
     {
         SharedParameterElement spe =
-            doc.GetElement(parameterId) as SharedParameterElement;
+            doc.GetElement(parameterId)
+            as SharedParameterElement;
 
         if (spe != null)
-            return spe.GuidValue.ToString();
+        {
+            return
+                spe.GuidValue
+                    .ToString()
+                    .ToLowerInvariant();
+        }
     }
     catch
     {
@@ -192,59 +380,59 @@ Func<ElementId, string> GetParameterGuid = parameterId =>
     return null;
 };
 
-// ============================================================
-// PORTABLE PARAMETER IDENTITY
-//
-// IMPORTANT:
-// Revit ElementId is retained as metadata, but is NOT used as
-// the canonical identity for shared/project parameters.
-//
-// Built-in:
-//     BIP:-1002001
-//
-// Shared:
-//     GUID:f04b438c-dac0-4e90-853e-d87712fdcc27
-//
-// Project:
-//     PROJECT:My Parameter
-//
-// Other:
-//     NAME:My Parameter
-// ============================================================
 
-Func<ElementId, string> GetParameterKey = parameterId =>
+// ============================================================================
+// PORTABLE PARAMETER KEY
+//
+// This is the parameter identity used by canonical filter signatures.
+// ============================================================================
+
+Func<ElementId, string> GetParameterKey =
+    delegate(ElementId parameterId)
 {
     if (parameterId == null)
         return "UNKNOWN";
 
+    if (
+        parameterId == ElementId.InvalidElementId ||
+        parameterId.IntegerValue == -1
+    )
+    {
+        return "UNKNOWN";
+    }
 
-    // --------------------------------------------------------
+
+    // ------------------------------------------------------------------------
     // Built-in parameter
-    // Negative IDs are stable Revit built-in identities.
-    // --------------------------------------------------------
+    //
+    // Stable across RVT files.
+// ------------------------------------------------------------------------
 
     if (parameterId.IntegerValue < 0)
     {
         return
             "BIP:" +
-            parameterId.IntegerValue.ToString(
-                System.Globalization.CultureInfo.InvariantCulture
-            );
+            parameterId.IntegerValue
+                .ToString(
+                    CultureInfo.InvariantCulture
+                );
     }
 
 
     try
     {
-        Element e = doc.GetElement(parameterId);
+        Element element =
+            doc.GetElement(parameterId);
 
 
-        // ----------------------------------------------------
+        // --------------------------------------------------------------------
         // Shared parameter
+        //
         // GUID is the portable identity.
-        // ----------------------------------------------------
+        // --------------------------------------------------------------------
 
         SharedParameterElement spe =
-            e as SharedParameterElement;
+            element as SharedParameterElement;
 
         if (spe != null)
         {
@@ -256,18 +444,14 @@ Func<ElementId, string> GetParameterKey = parameterId =>
         }
 
 
-        // ----------------------------------------------------
+        // --------------------------------------------------------------------
         // Project parameter
         //
-        // Revit does not give these a shared GUID.
-        // For V1 we therefore use the parameter name as the
-        // portable fallback identity.
-        //
-        // Raw ElementId is still exported separately.
-        // ----------------------------------------------------
+        // No GUID is available, so V1.1 falls back to parameter name.
+        // --------------------------------------------------------------------
 
         ParameterElement pe =
-            e as ParameterElement;
+            element as ParameterElement;
 
         if (pe != null)
         {
@@ -278,15 +462,15 @@ Func<ElementId, string> GetParameterKey = parameterId =>
         }
 
 
-        // ----------------------------------------------------
-        // Other resolvable parameter element
-        // ----------------------------------------------------
+        // --------------------------------------------------------------------
+        // Other identifiable element
+        // --------------------------------------------------------------------
 
-        if (e != null)
+        if (element != null)
         {
             return
                 "NAME:" +
-                (e.Name ?? "")
+                (element.Name ?? "")
                     .Trim();
         }
     }
@@ -295,182 +479,33 @@ Func<ElementId, string> GetParameterKey = parameterId =>
     }
 
 
-    // --------------------------------------------------------
-    // Last-resort fallback.
+    // ------------------------------------------------------------------------
+    // Last resort.
     //
-    // This is deliberately marked LOCAL because it cannot be
-    // assumed portable between RVT files.
-    // --------------------------------------------------------
+    // LOCAL explicitly means the identity is document-specific.
+    // ------------------------------------------------------------------------
 
     return
         "LOCAL:" +
-        parameterId.IntegerValue.ToString(
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-};
-
-// ============================================================
-// REFLECTION HELPERS
-// ============================================================
-
-Func<object, string, object> GetPropertyValue =
-    (obj, propertyName) =>
-{
-    if (obj == null)
-        return null;
-
-    try
-    {
-        PropertyInfo p = obj.GetType().GetProperty(
-            propertyName,
-            BindingFlags.Public | BindingFlags.Instance
-        );
-
-        if (p != null &&
-            p.CanRead &&
-            p.GetIndexParameters().Length == 0)
-        {
-            return p.GetValue(obj, null);
-        }
-    }
-    catch
-    {
-    }
-
-    return null;
+        parameterId.IntegerValue
+            .ToString(
+                CultureInfo.InvariantCulture
+            );
 };
 
 
-Func<object, string, object> InvokeNoArg =
-    (obj, methodName) =>
-{
-    if (obj == null)
-        return null;
+// ============================================================================
+// RULE VALUES
+// ============================================================================
 
-    try
-    {
-        MethodInfo m = obj.GetType().GetMethod(
-            methodName,
-            BindingFlags.Public | BindingFlags.Instance,
-            null,
-            Type.EmptyTypes,
-            null
-        );
-
-        if (m != null)
-            return m.Invoke(obj, null);
-    }
-    catch
-    {
-    }
-
-    return null;
-};
-
-
-// ============================================================
-// VALUE FORMATTING
-// ============================================================
-
-Func<object, string> RawValueText = value =>
-{
-    if (value == null)
-        return null;
-
-    ElementId eid = value as ElementId;
-
-    if (eid != null)
-        return eid.IntegerValue.ToString();
-
-    double? d = value as double?;
-
-    if (d.HasValue)
-        return d.Value.ToString(
-            "R",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-
-    return Convert.ToString(
-        value,
-        System.Globalization.CultureInfo.InvariantCulture
-    );
-};
-
-
-// ============================================================
-// OPERATOR NORMALIZATION
-// ============================================================
-
-Func<string, bool, string> NormalizeOperator =
-    (evaluatorName, inverted) =>
-{
-    string op = evaluatorName ?? "";
-
-    if (op.StartsWith("Filter"))
-        op = op.Substring("Filter".Length);
-
-    op = op
-        .Replace("String", "")
-        .Replace("Numeric", "");
-
-    switch (op)
-    {
-        case "Equals":
-            return inverted ? "NotEquals" : "Equals";
-
-        case "Contains":
-            return inverted ? "DoesNotContain" : "Contains";
-
-        case "BeginsWith":
-            return inverted ? "DoesNotBeginWith" : "BeginsWith";
-
-        case "EndsWith":
-            return inverted ? "DoesNotEndWith" : "EndsWith";
-
-        case "Greater":
-            return inverted ? "LessThanOrEqual" : "GreaterThan";
-
-        case "GreaterOrEqual":
-            return inverted ? "LessThan" : "GreaterThanOrEqual";
-
-        case "Less":
-            return inverted ? "GreaterThanOrEqual" : "LessThan";
-
-        case "LessOrEqual":
-            return inverted ? "GreaterThan" : "LessThanOrEqual";
-
-        default:
-            return inverted
-                ? "NOT(" + op + ")"
-                : op;
-    }
-};
-
-
-// ============================================================
-// RULE VALUE EXTRACTION
-// ============================================================
-
-Func<FilterRule, object> GetRuleValue = rule =>
+Func<FilterRule, object> GetRuleValue =
+    delegate(FilterRule rule)
 {
     if (rule == null)
         return null;
 
-    string[] propertyNames =
-    {
-        "RuleString",
-        "RuleValue"
-    };
 
-    foreach (string propertyName in propertyNames)
-    {
-        object v = GetPropertyValue(rule, propertyName);
-
-        if (v != null)
-            return v;
-    }
-
-    string[] methodNames =
+    string[] methods =
     {
         "GetStringValue",
         "GetDoubleValue",
@@ -478,79 +513,379 @@ Func<FilterRule, object> GetRuleValue = rule =>
         "GetElementIdValue"
     };
 
-    foreach (string methodName in methodNames)
-    {
-        object v = InvokeNoArg(rule, methodName);
 
-        if (v != null)
-            return v;
+    foreach (string methodName in methods)
+    {
+        try
+        {
+            MethodInfo method =
+                rule
+                    .GetType()
+                    .GetMethod(
+                        methodName,
+                        BindingFlags.Instance |
+                        BindingFlags.Public
+                    );
+
+            if (method == null)
+                continue;
+
+            object value =
+                method.Invoke(
+                    rule,
+                    null
+                );
+
+            if (value != null)
+                return value;
+        }
+        catch
+        {
+        }
+    }
+
+
+    return null;
+};
+
+
+Func<object, string> RawValueText =
+    delegate(object value)
+{
+    if (value == null)
+        return null;
+
+    ElementId elementId =
+        value as ElementId;
+
+    if (elementId != null)
+    {
+        return
+            elementId.IntegerValue
+                .ToString(
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+    if (value is double)
+    {
+        return
+            ((double)value)
+                .ToString(
+                    "R",
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+    if (value is float)
+    {
+        return
+            ((float)value)
+                .ToString(
+                    "R",
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+    if (value is int)
+    {
+        return
+            ((int)value)
+                .ToString(
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+    if (value is long)
+    {
+        return
+            ((long)value)
+                .ToString(
+                    CultureInfo.InvariantCulture
+                );
+    }
+
+    if (value is bool)
+    {
+        return
+            ((bool)value)
+            ? "true"
+            : "false";
+    }
+
+    return Convert.ToString(
+        value,
+        CultureInfo.InvariantCulture
+    );
+};
+
+
+// ============================================================================
+// EPSILON
+// ============================================================================
+
+Func<FilterRule, double?> GetRuleEpsilon =
+    delegate(FilterRule rule)
+{
+    if (rule == null)
+        return null;
+
+    try
+    {
+        object value =
+            InvokeNoArg(
+                rule,
+                "GetEpsilon"
+            );
+
+        if (value is double)
+            return (double)value;
+    }
+    catch
+    {
     }
 
     return null;
 };
 
 
-// ============================================================
-// FILTER CATEGORY RULE SUPPORT
-// ============================================================
+// ============================================================================
+// CATEGORY RULE IDS
+// ============================================================================
 
-Func<FilterRule, List<int>> GetCategoryRuleIds = rule =>
+Func<FilterRule, List<int>> GetCategoryRuleIds =
+    delegate(FilterRule rule)
 {
-    List<int> result = new List<int>();
+    List<int> result =
+        new List<int>();
 
     if (rule == null)
         return result;
 
-    object single = InvokeNoArg(rule, "GetCategoryId");
 
-    ElementId singleId = single as ElementId;
+    // ------------------------------------------------------------------------
+    // Try plural method/property first.
+// ------------------------------------------------------------------------
 
-    if (singleId != null)
-        result.Add(singleId.IntegerValue);
+    object idsObject =
+        InvokeNoArg(
+            rule,
+            "GetCategoryIds"
+        );
 
-    object multiple = InvokeNoArg(rule, "GetCategoryIds");
+    if (idsObject == null)
+    {
+        idsObject =
+            GetPublicProperty(
+                rule,
+                "CategoryIds"
+            );
+    }
 
-    IEnumerable enumerable = multiple as IEnumerable;
+
+    IEnumerable enumerable =
+        idsObject as IEnumerable;
 
     if (enumerable != null)
     {
         foreach (object item in enumerable)
         {
-            ElementId id = item as ElementId;
+            ElementId id =
+                item as ElementId;
 
             if (id != null)
                 result.Add(id.IntegerValue);
         }
     }
 
-    return result
-        .Distinct()
-        .OrderBy(x => x)
-        .ToList();
+
+    // ------------------------------------------------------------------------
+    // Try singular category ID.
+// ------------------------------------------------------------------------
+
+    if (result.Count == 0)
+    {
+        object idObject =
+            InvokeNoArg(
+                rule,
+                "GetCategoryId"
+            );
+
+        if (idObject == null)
+        {
+            idObject =
+                GetPublicProperty(
+                    rule,
+                    "CategoryId"
+                );
+        }
+
+        ElementId id =
+            idObject as ElementId;
+
+        if (id != null)
+            result.Add(id.IntegerValue);
+    }
+
+
+    return
+        result
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
 };
 
 
-// ============================================================
-// RULE SERIALIZATION
-// ============================================================
+// ============================================================================
+// OPERATOR NORMALISATION
+// ============================================================================
 
-Func<FilterRule, bool, string> BuildRuleSignature = null;
-Func<FilterRule, bool, string> RuleToJson = null;
+Func<string, bool, string> NormalizeOperator =
+    delegate(string evaluatorName, bool inverted)
+{
+    string op = null;
+
+    switch (evaluatorName)
+    {
+        // --------------------------------------------------------------------
+        // String
+        // --------------------------------------------------------------------
+
+        case "FilterStringEquals":
+            op = "Equals";
+            break;
+
+        case "FilterStringContains":
+            op = "Contains";
+            break;
+
+        case "FilterStringBeginsWith":
+            op = "BeginsWith";
+            break;
+
+        case "FilterStringEndsWith":
+            op = "EndsWith";
+            break;
+
+        case "FilterStringGreater":
+            op = "GreaterThan";
+            break;
+
+        case "FilterStringGreaterOrEqual":
+            op = "GreaterThanOrEqual";
+            break;
+
+        case "FilterStringLess":
+            op = "LessThan";
+            break;
+
+        case "FilterStringLessOrEqual":
+            op = "LessThanOrEqual";
+            break;
 
 
-BuildRuleSignature = (rule, inheritedInverse) =>
+        // --------------------------------------------------------------------
+        // Numeric
+        // --------------------------------------------------------------------
+
+        case "FilterNumericEquals":
+            op = "Equals";
+            break;
+
+        case "FilterNumericGreater":
+            op = "GreaterThan";
+            break;
+
+        case "FilterNumericGreaterOrEqual":
+            op = "GreaterThanOrEqual";
+            break;
+
+        case "FilterNumericLess":
+            op = "LessThan";
+            break;
+
+        case "FilterNumericLessOrEqual":
+            op = "LessThanOrEqual";
+            break;
+
+        default:
+            op =
+                !string.IsNullOrWhiteSpace(evaluatorName)
+                ? evaluatorName
+                : "Unknown";
+            break;
+    }
+
+
+    if (!inverted)
+        return op;
+
+
+    // ------------------------------------------------------------------------
+    // Normalise inverse wrapper to explicit operator.
+    // ------------------------------------------------------------------------
+
+    switch (op)
+    {
+        case "Equals":
+            return "NotEquals";
+
+        case "Contains":
+            return "DoesNotContain";
+
+        case "BeginsWith":
+            return "DoesNotBeginWith";
+
+        case "EndsWith":
+            return "DoesNotEndWith";
+
+        case "GreaterThan":
+            return "LessThanOrEqual";
+
+        case "GreaterThanOrEqual":
+            return "LessThan";
+
+        case "LessThan":
+            return "GreaterThanOrEqual";
+
+        case "LessThanOrEqual":
+            return "GreaterThan";
+
+        default:
+            return "NOT(" + op + ")";
+    }
+};
+
+
+// ============================================================================
+// PORTABLE RULE SIGNATURE
+//
+// SINGLE SOURCE OF TRUTH FOR RULE MATCHING.
+//
+// Nothing else in this script should construct a parameter-rule signature.
+// ============================================================================
+
+Func<FilterRule, bool, string>
+    BuildPortableRuleSignature = null;
+
+
+BuildPortableRuleSignature =
+    delegate(FilterRule rule, bool inheritedInverse)
 {
     if (rule == null)
         return "NULL_RULE";
 
-    Type type = rule.GetType();
+
+    Type type =
+        rule.GetType();
 
 
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
     // Inverse wrapper
     //
-    // Normalize the inverse into the resulting operator.
-    // --------------------------------------------------------
+    // Do not include the wrapper itself in the canonical signature.
+    // Instead invert the terminal rule operator.
+    // ------------------------------------------------------------------------
 
     if (rule is FilterInverseRule)
     {
@@ -560,16 +895,25 @@ BuildRuleSignature = (rule, inheritedInverse) =>
                 "GetInnerRule"
             ) as FilterRule;
 
-        return BuildRuleSignature(
-            inner,
-            !inheritedInverse
-        );
+        if (inner == null)
+        {
+            return
+                "RULE|" +
+                type.Name +
+                "|INVERSE=TRUE|INNER=UNKNOWN";
+        }
+
+        return
+            BuildPortableRuleSignature(
+                inner,
+                !inheritedInverse
+            );
     }
 
 
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
     // Category rule
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
 
     if (type.Name == "FilterCategoryRule")
     {
@@ -577,21 +921,21 @@ BuildRuleSignature = (rule, inheritedInverse) =>
             GetCategoryRuleIds(rule);
 
         return
-            "CATEGORY_RULE|" +
+            "CATEGORY_RULE|CATEGORIES=" +
             string.Join(
                 ",",
                 ids.Select(
                     x => x.ToString(
-                        System.Globalization.CultureInfo.InvariantCulture
+                        CultureInfo.InvariantCulture
                     )
                 )
             );
     }
 
 
-    // --------------------------------------------------------
-    // Parameter
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Parameter identity
+    // ------------------------------------------------------------------------
 
     ElementId parameterId =
         InvokeNoArg(
@@ -604,9 +948,9 @@ BuildRuleSignature = (rule, inheritedInverse) =>
         GetParameterKey(parameterId);
 
 
-    // --------------------------------------------------------
-    // Evaluator
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Evaluator/operator
+    // ------------------------------------------------------------------------
 
     object evaluator =
         InvokeNoArg(
@@ -614,6 +958,7 @@ BuildRuleSignature = (rule, inheritedInverse) =>
             "GetEvaluator"
         );
 
+
     string evaluatorName =
         evaluator != null
         ? evaluator.GetType().Name
@@ -627,9 +972,32 @@ BuildRuleSignature = (rule, inheritedInverse) =>
         );
 
 
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Special value-presence rules
+    // ------------------------------------------------------------------------
+
+    if (
+        type.Name == "HasValueFilterRule" ||
+        type.Name == "ParameterValuePresenceRule"
+    )
+    {
+        operatorName =
+            inheritedInverse
+            ? "HasNoValue"
+            : "HasValue";
+    }
+    else if (type.Name == "HasNoValueFilterRule")
+    {
+        operatorName =
+            inheritedInverse
+            ? "HasValue"
+            : "HasNoValue";
+    }
+
+
+    // ------------------------------------------------------------------------
     // Value
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
 
     object value =
         GetRuleValue(rule);
@@ -638,176 +1006,236 @@ BuildRuleSignature = (rule, inheritedInverse) =>
         RawValueText(value);
 
 
-    // --------------------------------------------------------
-    // CANONICAL RULE SIGNATURE
+    // ------------------------------------------------------------------------
+    // Epsilon
     //
-    // NOTE:
-    // parameterId is intentionally NOT used here.
-    // --------------------------------------------------------
+    // Include epsilon for a complete numeric rule identity when available.
+    // ------------------------------------------------------------------------
 
-    return string.Join(
-        "|",
-        new string[]
-        {
-            "RULE",
-            type.Name,
-            "PARAM=" + parameterKey,
-            "OP=" + (operatorName ?? ""),
-            "VALUE=" + (rawValue ?? "")
-        }
-    );
-};BuildRuleSignature = (rule, inheritedInverse) =>
-{
-    if (rule == null)
-        return "NULL_RULE";
+    double? epsilon =
+        GetRuleEpsilon(rule);
 
-    Type type = rule.GetType();
 
-    // --------------------------------------------------------
-    // Inverse wrapper
-    // --------------------------------------------------------
+    string epsilonText =
+        epsilon.HasValue
+        ? epsilon.Value.ToString(
+            "R",
+            CultureInfo.InvariantCulture
+        )
+        : "";
 
-    if (rule is FilterInverseRule)
+
+    // ------------------------------------------------------------------------
+    // CANONICAL PORTABLE SIGNATURE
+    // ------------------------------------------------------------------------
+
+    StringBuilder signature =
+        new StringBuilder();
+
+    signature.Append("RULE|");
+    signature.Append(type.Name);
+
+    signature.Append("|PARAM=");
+    signature.Append(parameterKey ?? "UNKNOWN");
+
+    signature.Append("|OP=");
+    signature.Append(operatorName ?? "");
+
+    signature.Append("|VALUE=");
+    signature.Append(rawValue ?? "");
+
+    if (epsilon.HasValue)
     {
-        FilterRule inner =
-            InvokeNoArg(rule, "GetInnerRule") as FilterRule;
-
-        return BuildRuleSignature(
-            inner,
-            !inheritedInverse
-        );
+        signature.Append("|EPSILON=");
+        signature.Append(epsilonText);
     }
 
-
-    // --------------------------------------------------------
-    // Category rule
-    // --------------------------------------------------------
-
-    if (type.Name == "FilterCategoryRule")
-    {
-        List<int> ids = GetCategoryRuleIds(rule);
-
-        return
-            "CATEGORY_RULE|" +
-            string.Join(",", ids.Select(x => x.ToString()));
-    }
-
-
-    // --------------------------------------------------------
-    // Parameter ID
-    // --------------------------------------------------------
-
-    ElementId parameterId =
-        InvokeNoArg(rule, "GetRuleParameter") as ElementId;
-
-
-    // --------------------------------------------------------
-    // Evaluator
-    // --------------------------------------------------------
-
-    object evaluator =
-        InvokeNoArg(rule, "GetEvaluator");
-
-    string evaluatorName =
-        evaluator != null
-        ? evaluator.GetType().Name
-        : null;
-
-
-    string operatorName =
-        NormalizeOperator(
-            evaluatorName,
-            inheritedInverse
-        );
-
-
-    // --------------------------------------------------------
-    // Value
-    // --------------------------------------------------------
-
-    object value =
-        GetRuleValue(rule);
-
-    string rawValue =
-        RawValueText(value);
-
-
-    return string.Join(
-        "|",
-        new string[]
-        {
-            "RULE",
-            type.Name,
-            parameterId != null
-                ? parameterId.IntegerValue.ToString()
-                : "",
-            operatorName ?? "",
-            rawValue ?? ""
-        }
-    );
+    return signature.ToString();
 };
 
 
-RuleToJson = (rule, inheritedInverse) =>
-{
-    StringBuilder sb = new StringBuilder();
+// ============================================================================
+// RULE JSON
+// ============================================================================
 
+Func<FilterRule, bool, string>
+    RuleToJson = null;
+
+
+RuleToJson =
+    delegate(FilterRule rule, bool inheritedInverse)
+{
     if (rule == null)
         return "null";
 
 
-    Type ruleType = rule.GetType();
+    Type type =
+        rule.GetType();
 
 
-    // --------------------------------------------------------
-    // INVERSE RULE
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Inverse wrapper
+    // ------------------------------------------------------------------------
 
     if (rule is FilterInverseRule)
     {
-        FilterRule innerRule =
-            InvokeNoArg(rule, "GetInnerRule") as FilterRule;
+        FilterRule inner =
+            InvokeNoArg(
+                rule,
+                "GetInnerRule"
+            ) as FilterRule;
 
-        sb.Append("{");
-        sb.Append("\"nodeType\":\"rule\",");
-        sb.Append("\"ruleType\":\"FilterInverseRule\",");
-        sb.Append("\"isInverted\":true,");
-        sb.Append("\"innerRule\":");
 
-        sb.Append(
-            RuleToJson(
-                innerRule,
-                !inheritedInverse
+        StringBuilder inverseJson =
+            new StringBuilder();
+
+        inverseJson.Append("{");
+
+        inverseJson.Append(
+            "\"nodeType\":\"rule\","
+        );
+
+        inverseJson.Append(
+            "\"ruleType\":" +
+            JString(type.Name) +
+            ","
+        );
+
+        inverseJson.Append(
+            "\"isInverted\":true,"
+        );
+
+        inverseJson.Append(
+            "\"innerRule\":" +
+            (
+                inner != null
+                ? RuleToJson(
+                    inner,
+                    !inheritedInverse
+                )
+                : "null"
+            ) +
+            ","
+        );
+
+        inverseJson.Append(
+            "\"signature\":" +
+            JString(
+                BuildPortableRuleSignature(
+                    rule,
+                    inheritedInverse
+                )
             )
         );
 
-        sb.Append("}");
+        inverseJson.Append("}");
 
-        return sb.ToString();
+        return inverseJson.ToString();
     }
 
 
-    // --------------------------------------------------------
-    // NORMAL RULE
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Category rule
+    // ------------------------------------------------------------------------
+
+    if (type.Name == "FilterCategoryRule")
+    {
+        List<int> categoryIds =
+            GetCategoryRuleIds(rule);
+
+
+        StringBuilder categoryJson =
+            new StringBuilder();
+
+        categoryJson.Append("{");
+
+        categoryJson.Append(
+            "\"nodeType\":\"rule\","
+        );
+
+        categoryJson.Append(
+            "\"ruleType\":" +
+            JString(type.Name) +
+            ","
+        );
+
+        categoryJson.Append(
+            "\"isInverted\":" +
+            JBool(inheritedInverse) +
+            ","
+        );
+
+        categoryJson.Append(
+            "\"categoryIds\":["
+        );
+
+        for (
+            int i = 0;
+            i < categoryIds.Count;
+            i++
+        )
+        {
+            if (i > 0)
+                categoryJson.Append(",");
+
+            categoryJson.Append(
+                categoryIds[i].ToString(
+                    CultureInfo.InvariantCulture
+                )
+            );
+        }
+
+        categoryJson.Append("],");
+
+        categoryJson.Append(
+            "\"signature\":" +
+            JString(
+                BuildPortableRuleSignature(
+                    rule,
+                    inheritedInverse
+                )
+            )
+        );
+
+        categoryJson.Append("}");
+
+        return categoryJson.ToString();
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Normal terminal rule
+    // ------------------------------------------------------------------------
 
     ElementId parameterId =
-        InvokeNoArg(rule, "GetRuleParameter") as ElementId;
+        InvokeNoArg(
+            rule,
+            "GetRuleParameter"
+        ) as ElementId;
+
+
+    string parameterKey =
+        GetParameterKey(parameterId);
+
 
     string parameterName =
         GetParameterName(parameterId);
 
+
     string parameterSource =
         GetParameterSource(parameterId);
 
+
     string parameterGuid =
         GetParameterGuid(parameterId);
-        
-	string parameterKey =
-	    GetParameterKey(parameterId);
+
 
     object evaluator =
-        InvokeNoArg(rule, "GetEvaluator");
+        InvokeNoArg(
+            rule,
+            "GetEvaluator"
+        );
+
 
     string evaluatorName =
         evaluator != null
@@ -822,22 +1250,54 @@ RuleToJson = (rule, inheritedInverse) =>
         );
 
 
+    if (
+        type.Name == "HasValueFilterRule" ||
+        type.Name == "ParameterValuePresenceRule"
+    )
+    {
+        operatorName =
+            inheritedInverse
+            ? "HasNoValue"
+            : "HasValue";
+    }
+    else if (type.Name == "HasNoValueFilterRule")
+    {
+        operatorName =
+            inheritedInverse
+            ? "HasValue"
+            : "HasNoValue";
+    }
+
+
     object value =
         GetRuleValue(rule);
+
 
     string rawValue =
         RawValueText(value);
 
 
+    double? epsilon =
+        GetRuleEpsilon(rule);
+
+
+    StringBuilder sb =
+        new StringBuilder();
+
     sb.Append("{");
 
-    sb.Append("\"nodeType\":\"rule\",");
+
+    sb.Append(
+        "\"nodeType\":\"rule\","
+    );
+
 
     sb.Append(
         "\"ruleType\":" +
-        JString(ruleType.Name) +
+        JString(type.Name) +
         ","
     );
+
 
     sb.Append(
         "\"isInverted\":" +
@@ -846,62 +1306,36 @@ RuleToJson = (rule, inheritedInverse) =>
     );
 
 
-    // --------------------------------------------------------
-    // Category rule
-    // --------------------------------------------------------
-
-    if (ruleType.Name == "FilterCategoryRule")
-    {
-        List<int> categoryIds =
-            GetCategoryRuleIds(rule);
-
-        sb.Append("\"categoryIds\":[");
-
-        for (int i = 0; i < categoryIds.Count; i++)
-        {
-            if (i > 0)
-                sb.Append(",");
-
-            sb.Append(categoryIds[i]);
-        }
-
-        sb.Append("],");
-
-        sb.Append(
-            "\"signature\":" +
-            JString(
-                BuildRuleSignature(
-                    rule,
-                    inheritedInverse
-                )
-            )
-        );
-
-        sb.Append("}");
-
-        return sb.ToString();
-    }
-
-
-    // --------------------------------------------------------
-    // Parameter metadata
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Raw Revit parameter ElementId
+    //
+    // Informational only.
+    // ------------------------------------------------------------------------
 
     sb.Append(
         "\"parameterId\":" +
         (
             parameterId != null
-            ? parameterId.IntegerValue.ToString()
+            ? parameterId.IntegerValue
+                .ToString(
+                    CultureInfo.InvariantCulture
+                )
             : "null"
         ) +
         ","
     );
-    
+
+
+    // ------------------------------------------------------------------------
+    // Portable parameter identity
+    // ------------------------------------------------------------------------
+
     sb.Append(
-	    "\"parameterKey\":" +
-	    JString(parameterKey) +
-	    ","
-	);
+        "\"parameterKey\":" +
+        JString(parameterKey) +
+        ","
+    );
+
 
     sb.Append(
         "\"parameterName\":" +
@@ -909,11 +1343,13 @@ RuleToJson = (rule, inheritedInverse) =>
         ","
     );
 
+
     sb.Append(
         "\"parameterSource\":" +
         JString(parameterSource) +
         ","
     );
+
 
     sb.Append(
         "\"parameterGuid\":" +
@@ -922,15 +1358,12 @@ RuleToJson = (rule, inheritedInverse) =>
     );
 
 
-    // --------------------------------------------------------
-    // Evaluator + operator
-    // --------------------------------------------------------
-
     sb.Append(
         "\"evaluator\":" +
         JString(evaluatorName) +
         ","
     );
+
 
     sb.Append(
         "\"operator\":" +
@@ -939,10 +1372,6 @@ RuleToJson = (rule, inheritedInverse) =>
     );
 
 
-    // --------------------------------------------------------
-    // Value
-    // --------------------------------------------------------
-
     sb.Append(
         "\"rawValue\":" +
         JString(rawValue) +
@@ -950,189 +1379,287 @@ RuleToJson = (rule, inheritedInverse) =>
     );
 
 
-    // --------------------------------------------------------
-    // Epsilon for double rules
-    // --------------------------------------------------------
-
-    object epsilon =
-        GetPropertyValue(rule, "Epsilon");
-
     sb.Append(
         "\"epsilon\":" +
-        JString(RawValueText(epsilon)) +
+        (
+            epsilon.HasValue
+            ? epsilon.Value.ToString(
+                "R",
+                CultureInfo.InvariantCulture
+            )
+            : "null"
+        ) +
         ","
     );
 
 
-    // --------------------------------------------------------
-    // Rule signature
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // IMPORTANT:
+    // Signature comes ONLY from BuildPortableRuleSignature.
+// ------------------------------------------------------------------------
 
     sb.Append(
         "\"signature\":" +
         JString(
-            BuildRuleSignature(
+            BuildPortableRuleSignature(
                 rule,
                 inheritedInverse
             )
         )
     );
 
+
     sb.Append("}");
+
 
     return sb.ToString();
 };
 
 
-// ============================================================
-// ELEMENT FILTER TREE SERIALIZATION
-// ============================================================
+// ============================================================================
+// TREE SIGNATURE
+//
+// Canonicalises logically equivalent AND/OR structures by:
+// - recursively signing children
+// - sorting children
+// - collapsing single-child logical wrappers
+//
+// All terminal rule signatures call BuildPortableRuleSignature.
+// ============================================================================
 
-Func<ElementFilter, string> BuildTreeSignature = null;
-Func<ElementFilter, string> FilterTreeToJson = null;
+Func<ElementFilter, string>
+    BuildTreeSignature = null;
 
 
-BuildTreeSignature = filter =>
+BuildTreeSignature =
+    delegate(ElementFilter elementFilter)
 {
-    if (filter == null)
+    if (elementFilter == null)
         return "NO_RULES";
 
 
-    // --------------------------------------------------------
-    // Logical filters
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Logical AND
+    // ------------------------------------------------------------------------
 
-    ElementLogicalFilter logical =
-        filter as ElementLogicalFilter;
+    LogicalAndFilter andFilter =
+        elementFilter as LogicalAndFilter;
 
-    if (logical != null)
+    if (andFilter != null)
     {
-        string logicType =
-            filter is LogicalOrFilter
-            ? "OR"
-            : "AND";
-
         IList<ElementFilter> children =
-            logical.GetFilters();
+            andFilter.GetFilters();
 
-        List<string> childSignatures =
+
+        List<string> signatures =
             children
-            .Select(x => BuildTreeSignature(x))
-            .ToList();
+                .Select(
+                    x => BuildTreeSignature(x)
+                )
+                .Where(
+                    x => !string.IsNullOrWhiteSpace(x)
+                )
+                .OrderBy(
+                    x => x,
+                    StringComparer.Ordinal
+                )
+                .ToList();
 
 
-        // Logical AND / OR is commutative.
-        // Sort children so order does not affect matching.
-        childSignatures.Sort(
-            StringComparer.Ordinal
-        );
+        if (signatures.Count == 0)
+            return "NO_RULES";
 
-
-        // Remove a redundant single-child logical wrapper.
-        if (childSignatures.Count == 1)
-            return childSignatures[0];
-
-
-        return
-            logicType +
-            "(" +
-            string.Join(",", childSignatures) +
-            ")";
-    }
-
-
-    // --------------------------------------------------------
-    // ElementParameterFilter
-    // --------------------------------------------------------
-
-    ElementParameterFilter epf =
-        filter as ElementParameterFilter;
-
-    if (epf != null)
-    {
-        IList<FilterRule> rules =
-            epf.GetRules();
-
-        List<string> ruleSignatures =
-            rules
-            .Select(x => BuildRuleSignature(x, false))
-            .OrderBy(x => x, StringComparer.Ordinal)
-            .ToList();
-
-
-        // Multiple rules inside ElementParameterFilter are AND.
-        if (ruleSignatures.Count == 1)
-            return ruleSignatures[0];
+        if (signatures.Count == 1)
+            return signatures[0];
 
 
         return
             "AND(" +
-            string.Join(",", ruleSignatures) +
+            string.Join(
+                ",",
+                signatures
+            ) +
             ")";
     }
 
 
-    return
-        "UNKNOWN_FILTER|" +
-        filter.GetType().FullName;
-};
+    // ------------------------------------------------------------------------
+    // Logical OR
+    // ------------------------------------------------------------------------
 
+    LogicalOrFilter orFilter =
+        elementFilter as LogicalOrFilter;
 
-FilterTreeToJson = filter =>
-{
-    if (filter == null)
+    if (orFilter != null)
     {
+        IList<ElementFilter> children =
+            orFilter.GetFilters();
+
+
+        List<string> signatures =
+            children
+                .Select(
+                    x => BuildTreeSignature(x)
+                )
+                .Where(
+                    x => !string.IsNullOrWhiteSpace(x)
+                )
+                .OrderBy(
+                    x => x,
+                    StringComparer.Ordinal
+                )
+                .ToList();
+
+
+        if (signatures.Count == 0)
+            return "NO_RULES";
+
+        if (signatures.Count == 1)
+            return signatures[0];
+
+
         return
-            "{" +
-            "\"nodeType\":\"none\"," +
-            "\"logic\":\"NONE\"," +
-            "\"children\":[]" +
-            "}";
+            "OR(" +
+            string.Join(
+                ",",
+                signatures
+            ) +
+            ")";
     }
 
 
-    // --------------------------------------------------------
-    // Logical AND / OR
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // ElementParameterFilter
+    // ------------------------------------------------------------------------
 
-    ElementLogicalFilter logical =
-        filter as ElementLogicalFilter;
+    ElementParameterFilter parameterFilter =
+        elementFilter as ElementParameterFilter;
 
-    if (logical != null)
+    if (parameterFilter != null)
     {
-        string logicType =
-            filter is LogicalOrFilter
-            ? "OR"
-            : "AND";
+        IList<FilterRule> rules =
+            parameterFilter.GetRules();
 
+
+        List<string> signatures =
+            rules
+                .Select(
+                    x =>
+                        BuildPortableRuleSignature(
+                            x,
+                            false
+                        )
+                )
+                .Where(
+                    x => !string.IsNullOrWhiteSpace(x)
+                )
+                .OrderBy(
+                    x => x,
+                    StringComparer.Ordinal
+                )
+                .ToList();
+
+
+        if (signatures.Count == 0)
+            return "NO_RULES";
+
+        if (signatures.Count == 1)
+            return signatures[0];
+
+
+        return
+            "AND(" +
+            string.Join(
+                ",",
+                signatures
+            ) +
+            ")";
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Unsupported element-filter type
+    // ------------------------------------------------------------------------
+
+    return
+        "UNSUPPORTED_FILTER:" +
+        elementFilter.GetType().Name;
+};
+
+
+// ============================================================================
+// TREE JSON
+//
+// Raw-ish structure retained separately from canonical signatures.
+// ============================================================================
+
+Func<ElementFilter, string>
+    ElementFilterToJson = null;
+
+
+ElementFilterToJson =
+    delegate(ElementFilter elementFilter)
+{
+    if (elementFilter == null)
+        return "null";
+
+
+    // ------------------------------------------------------------------------
+    // Logical AND
+    // ------------------------------------------------------------------------
+
+    LogicalAndFilter andFilter =
+        elementFilter as LogicalAndFilter;
+
+    if (andFilter != null)
+    {
         IList<ElementFilter> children =
-            logical.GetFilters();
+            andFilter.GetFilters();
 
-        StringBuilder sb = new StringBuilder();
+
+        StringBuilder sb =
+            new StringBuilder();
 
         sb.Append("{");
-        sb.Append("\"nodeType\":\"logical\",");
-        sb.Append("\"logic\":" + JString(logicType) + ",");
-        sb.Append("\"children\":[");
 
-        for (int i = 0; i < children.Count; i++)
+        sb.Append(
+            "\"nodeType\":\"logical\","
+        );
+
+        sb.Append(
+            "\"logic\":\"AND\","
+        );
+
+        sb.Append(
+            "\"children\":["
+        );
+
+
+        for (
+            int i = 0;
+            i < children.Count;
+            i++
+        )
         {
             if (i > 0)
                 sb.Append(",");
 
             sb.Append(
-                FilterTreeToJson(
+                ElementFilterToJson(
                     children[i]
                 )
             );
         }
+
 
         sb.Append("],");
 
         sb.Append(
             "\"signature\":" +
             JString(
-                BuildTreeSignature(filter)
+                BuildTreeSignature(
+                    elementFilter
+                )
             )
         );
 
@@ -1142,26 +1669,107 @@ FilterTreeToJson = filter =>
     }
 
 
-    // --------------------------------------------------------
-    // ElementParameterFilter
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Logical OR
+    // ------------------------------------------------------------------------
 
-    ElementParameterFilter epf =
-        filter as ElementParameterFilter;
+    LogicalOrFilter orFilter =
+        elementFilter as LogicalOrFilter;
 
-    if (epf != null)
+    if (orFilter != null)
     {
-        IList<FilterRule> rules =
-            epf.GetRules();
+        IList<ElementFilter> children =
+            orFilter.GetFilters();
 
-        StringBuilder sb = new StringBuilder();
+
+        StringBuilder sb =
+            new StringBuilder();
 
         sb.Append("{");
-        sb.Append("\"nodeType\":\"parameterFilter\",");
-        sb.Append("\"logic\":\"AND\",");
-        sb.Append("\"rules\":[");
 
-        for (int i = 0; i < rules.Count; i++)
+        sb.Append(
+            "\"nodeType\":\"logical\","
+        );
+
+        sb.Append(
+            "\"logic\":\"OR\","
+        );
+
+        sb.Append(
+            "\"children\":["
+        );
+
+
+        for (
+            int i = 0;
+            i < children.Count;
+            i++
+        )
+        {
+            if (i > 0)
+                sb.Append(",");
+
+            sb.Append(
+                ElementFilterToJson(
+                    children[i]
+                )
+            );
+        }
+
+
+        sb.Append("],");
+
+        sb.Append(
+            "\"signature\":" +
+            JString(
+                BuildTreeSignature(
+                    elementFilter
+                )
+            )
+        );
+
+        sb.Append("}");
+
+        return sb.ToString();
+    }
+
+
+    // ------------------------------------------------------------------------
+    // ElementParameterFilter
+    // ------------------------------------------------------------------------
+
+    ElementParameterFilter parameterFilter =
+        elementFilter as ElementParameterFilter;
+
+    if (parameterFilter != null)
+    {
+        IList<FilterRule> rules =
+            parameterFilter.GetRules();
+
+
+        StringBuilder sb =
+            new StringBuilder();
+
+        sb.Append("{");
+
+        sb.Append(
+            "\"nodeType\":\"parameterFilter\","
+        );
+
+        sb.Append(
+            "\"logic\":\"AND\","
+        );
+
+        sb.Append(
+            "\"rules\":["
+        );
+
+
+        for (
+            int i = 0;
+            i < rules.Count;
+            i++
+        )
         {
             if (i > 0)
                 sb.Append(",");
@@ -1174,12 +1782,15 @@ FilterTreeToJson = filter =>
             );
         }
 
+
         sb.Append("],");
 
         sb.Append(
             "\"signature\":" +
             JString(
-                BuildTreeSignature(filter)
+                BuildTreeSignature(
+                    elementFilter
+                )
             )
         );
 
@@ -1189,320 +1800,541 @@ FilterTreeToJson = filter =>
     }
 
 
-    // --------------------------------------------------------
-    // Unexpected filter type
-    // --------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Unsupported element-filter type
+    // ------------------------------------------------------------------------
 
-    return
-        "{" +
-        "\"nodeType\":\"unknown\"," +
-        "\"runtimeType\":" +
-        JString(filter.GetType().FullName) +
-        "}";
-};
+    StringBuilder unsupported =
+        new StringBuilder();
 
+    unsupported.Append("{");
 
-// ============================================================
-// MAIN EXPORT
-// ============================================================
-
-try
-{
-    List<ParameterFilterElement> filters =
-        new FilteredElementCollector(doc)
-        .OfClass(typeof(ParameterFilterElement))
-        .Cast<ParameterFilterElement>()
-        .OrderBy(x => x.Name)
-        .ToList();
-
-
-    StringBuilder json = new StringBuilder();
-
-    json.AppendLine("{");
-
-    json.AppendLine(
-        "  \"schemaVersion\": \"1.1\","
+    unsupported.Append(
+        "\"nodeType\":\"unsupported\","
     );
 
-    json.AppendLine(
-        "  \"libraryName\": " +
-        JString(libraryName) +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"libraryVersion\": " +
-        JString(libraryVersion) +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"generatedUtc\": " +
+    unsupported.Append(
+        "\"filterType\":" +
         JString(
-            DateTime.UtcNow.ToString(
-                "yyyy-MM-ddTHH:mm:ssZ"
-            )
+            elementFilter
+                .GetType()
+                .Name
         ) +
         ","
     );
 
-    json.AppendLine(
-        "  \"revitVersion\": " +
-        JString(doc.Application.VersionNumber) +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"revitBuild\": " +
-        JString(doc.Application.VersionBuild) +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"sourceDocument\": " +
-        JString(doc.Title) +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"filterCount\": " +
-        filters.Count +
-        ","
-    );
-
-    json.AppendLine(
-        "  \"filters\": ["
-    );
-
-
-    for (int f = 0; f < filters.Count; f++)
-    {
-        ParameterFilterElement pfe =
-            filters[f];
-
-
-        // ====================================================
-        // CATEGORIES
-        // ====================================================
-
-        List<ElementId> categoryIds =
-            pfe.GetCategories()
-            .OrderBy(x => x.IntegerValue)
-            .ToList();
-
-
-        List<string> categorySignatureParts =
-            categoryIds
-            .Select(
-                x => x.IntegerValue.ToString()
+    unsupported.Append(
+        "\"signature\":" +
+        JString(
+            BuildTreeSignature(
+                elementFilter
             )
-            .OrderBy(x => x, StringComparer.Ordinal)
+        )
+    );
+
+    unsupported.Append("}");
+
+    return unsupported.ToString();
+};
+
+
+// ============================================================================
+// COLLECT OFFICE PARAMETER FILTERS
+// ============================================================================
+
+List<ParameterFilterElement> filters =
+    new FilteredElementCollector(doc)
+        .OfClass(
+            typeof(ParameterFilterElement)
+        )
+        .Cast<ParameterFilterElement>()
+        .OrderBy(
+            x => x.Name,
+            StringComparer.OrdinalIgnoreCase
+        )
+        .ToList();
+
+
+// ============================================================================
+// BUILD ROOT JSON
+// ============================================================================
+
+StringBuilder json =
+    new StringBuilder();
+
+
+json.AppendLine("{");
+
+json.AppendLine(
+    "  \"schemaVersion\": \"1.1\","
+);
+
+json.AppendLine(
+    "  \"libraryName\": " +
+    JString(libraryName) +
+    ","
+);
+
+json.AppendLine(
+    "  \"libraryVersion\": " +
+    JString(libraryVersion) +
+    ","
+);
+
+json.AppendLine(
+    "  \"generatedUtc\": " +
+    JString(
+        DateTime.UtcNow
+            .ToString(
+                "yyyy-MM-ddTHH:mm:ssZ",
+                CultureInfo.InvariantCulture
+            )
+    ) +
+    ","
+);
+
+json.AppendLine(
+    "  \"revitVersion\": " +
+    JString(
+        doc.Application.VersionNumber
+    ) +
+    ","
+);
+
+json.AppendLine(
+    "  \"revitBuild\": " +
+    JString(
+        doc.Application.VersionBuild
+    ) +
+    ","
+);
+
+json.AppendLine(
+    "  \"sourceDocument\": " +
+    JString(doc.Title) +
+    ","
+);
+
+json.AppendLine(
+    "  \"filterCount\": " +
+    filters.Count.ToString(
+        CultureInfo.InvariantCulture
+    ) +
+    ","
+);
+
+json.AppendLine(
+    "  \"filters\": ["
+);
+
+
+// ============================================================================
+// FILTER LOOP
+// ============================================================================
+
+for (
+    int filterIndex = 0;
+    filterIndex < filters.Count;
+    filterIndex++
+)
+{
+    ParameterFilterElement filter =
+        filters[filterIndex];
+
+
+    // ------------------------------------------------------------------------
+    // Categories
+    // ------------------------------------------------------------------------
+
+    List<ElementId> categoryIds =
+        filter
+            .GetCategories()
+            .OrderBy(
+                x => x.IntegerValue
+            )
             .ToList();
 
 
-        string categorySignature =
-            string.Join(
-                ",",
-                categorySignatureParts
-            );
-
-
-        // ====================================================
-        // FILTER TREE
-        // ====================================================
-
-        ElementFilter root =
-            pfe.GetElementFilter();
-
-
-        string treeSignature =
-            BuildTreeSignature(root);
-
-
-        // ====================================================
-        // COMPLETE DEFINITION SIGNATURE
-        //
-        // Name is deliberately included because our agreed
-        // office-match definition is:
-        //
-        // Name + Categories + Complete Rules
-        // ====================================================
-
-        string canonicalDefinition =
-            "NAME=" +
-            pfe.Name +
-            "|CATEGORIES=" +
-            categorySignature +
-            "|RULES=" +
-            treeSignature;
-
-
-        string definitionHash =
-            Sha256(canonicalDefinition);
-
-
-        // ====================================================
-        // WRITE FILTER
-        // ====================================================
-
-        json.AppendLine("    {");
-
-        json.AppendLine(
-            "      \"name\": " +
-            JString(pfe.Name) +
-            ","
-        );
-
-        json.AppendLine(
-            "      \"sourceElementId\": " +
-            pfe.Id.IntegerValue +
-            ","
-        );
-
-        json.AppendLine(
-            "      \"sourceUniqueId\": " +
-            JString(pfe.UniqueId) +
-            ","
+    string categorySignature =
+        string.Join(
+            ",",
+            categoryIds
+                .Select(
+                    x =>
+                        x.IntegerValue
+                            .ToString(
+                                CultureInfo.InvariantCulture
+                            )
+                )
         );
 
 
-        // ----------------------------------------------------
-        // Categories
-        // ----------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Element-filter tree
+    // ------------------------------------------------------------------------
 
-        json.AppendLine(
-            "      \"categories\": ["
+    ElementFilter elementFilter =
+        null;
+
+    try
+    {
+        elementFilter =
+            filter.GetElementFilter();
+    }
+    catch
+    {
+        elementFilter =
+            null;
+    }
+
+
+    // ------------------------------------------------------------------------
+    // Canonical portable rules
+    // ------------------------------------------------------------------------
+
+    string ruleSignature =
+        BuildTreeSignature(
+            elementFilter
         );
 
 
-        for (int c = 0; c < categoryIds.Count; c++)
+    // ------------------------------------------------------------------------
+    // Complete definition
+    //
+    // Exact Office match:
+    // Filter Name + Categories + Complete Rules
+    // ------------------------------------------------------------------------
+
+    string definitionSignature =
+        "NAME=" +
+        (filter.Name ?? "") +
+        "|CATEGORIES=" +
+        categorySignature +
+        "|RULES=" +
+        ruleSignature;
+
+
+    string definitionHash =
+        Sha256(
+            definitionSignature
+        );
+
+
+    // ------------------------------------------------------------------------
+    // Filter JSON
+    // ------------------------------------------------------------------------
+
+    json.AppendLine("    {");
+
+
+    json.AppendLine(
+        "      \"name\": " +
+        JString(filter.Name) +
+        ","
+    );
+
+
+    json.AppendLine(
+        "      \"sourceElementId\": " +
+        filter.Id.IntegerValue
+            .ToString(
+                CultureInfo.InvariantCulture
+            ) +
+        ","
+    );
+
+
+    json.AppendLine(
+        "      \"sourceUniqueId\": " +
+        JString(filter.UniqueId) +
+        ","
+    );
+
+
+    // ------------------------------------------------------------------------
+    // Categories JSON
+    // ------------------------------------------------------------------------
+
+    json.AppendLine(
+        "      \"categories\": ["
+    );
+
+
+    for (
+        int categoryIndex = 0;
+        categoryIndex < categoryIds.Count;
+        categoryIndex++
+    )
+    {
+        ElementId categoryId =
+            categoryIds[categoryIndex];
+
+
+        string categoryName =
+            null;
+
+        try
         {
-            ElementId categoryId =
-                categoryIds[c];
+            Category category =
+                Category.GetCategory(
+                    doc,
+                    categoryId
+                );
 
-            Category category = null;
-
-            try
-            {
-                category =
-                    Category.GetCategory(
-                        doc,
-                        categoryId
-                    );
-            }
-            catch
-            {
-            }
-
-            string categoryName =
-                category != null
-                ? category.Name
-                : null;
-
-
-            json.Append(
-                "        {" +
-                "\"id\":" +
-                categoryId.IntegerValue +
-                "," +
-                "\"name\":" +
-                JString(categoryName) +
-                "}"
-            );
-
-            if (c < categoryIds.Count - 1)
-                json.Append(",");
-
-            json.AppendLine();
+            if (category != null)
+                categoryName =
+                    category.Name;
+        }
+        catch
+        {
         }
 
 
-        json.AppendLine(
-            "      ],"
+        json.Append(
+            "        {" +
+            "\"id\":" +
+            categoryId.IntegerValue
+                .ToString(
+                    CultureInfo.InvariantCulture
+                ) +
+            "," +
+            "\"name\":" +
+            JString(categoryName) +
+            "}"
         );
 
 
-        // ----------------------------------------------------
-        // Rule tree
-        // ----------------------------------------------------
-
-        json.AppendLine(
-            "      \"ruleTree\": " +
-            FilterTreeToJson(root) +
-            ","
-        );
-
-
-        // ----------------------------------------------------
-        // Canonical signatures
-        // ----------------------------------------------------
-
-        json.AppendLine(
-            "      \"categorySignature\": " +
-            JString(categorySignature) +
-            ","
-        );
-
-        json.AppendLine(
-            "      \"ruleSignature\": " +
-            JString(treeSignature) +
-            ","
-        );
-
-        json.AppendLine(
-            "      \"definitionSignature\": " +
-            JString(canonicalDefinition) +
-            ","
-        );
-
-        json.AppendLine(
-            "      \"definitionHash\": " +
-            JString(definitionHash)
-        );
-
-
-        json.Append("    }");
-
-        if (f < filters.Count - 1)
+        if (
+            categoryIndex <
+            categoryIds.Count - 1
+        )
+        {
             json.Append(",");
+        }
+
 
         json.AppendLine();
     }
 
 
     json.AppendLine(
-        "  ]"
+        "      ],"
     );
+
+
+    // ------------------------------------------------------------------------
+    // Raw tree JSON
+    // ------------------------------------------------------------------------
 
     json.AppendLine(
-        "}"
+        "      \"ruleTree\": " +
+        ElementFilterToJson(
+            elementFilter
+        ) +
+        ","
     );
 
 
-    // ========================================================
-    // SAVE
-    // ========================================================
+    // ------------------------------------------------------------------------
+    // Canonical signatures
+    // ------------------------------------------------------------------------
 
-    File.WriteAllText(
-        outputPath,
-        json.ToString(),
-        new UTF8Encoding(false)
+    json.AppendLine(
+        "      \"categorySignature\": " +
+        JString(
+            categorySignature
+        ) +
+        ","
     );
 
 
-    TaskDialog.Show(
-        "Office Filter Library",
-        "Office filter library exported successfully.\n\n" +
-        "Filters exported: " +
-        filters.Count +
-        "\n\n" +
-        outputPath
+    json.AppendLine(
+        "      \"ruleSignature\": " +
+        JString(
+            ruleSignature
+        ) +
+        ","
     );
+
+
+    json.AppendLine(
+        "      \"definitionSignature\": " +
+        JString(
+            definitionSignature
+        ) +
+        ","
+    );
+
+
+    json.AppendLine(
+        "      \"definitionHash\": " +
+        JString(
+            definitionHash
+        )
+    );
+
+
+    json.Append("    }");
+
+
+    if (
+        filterIndex <
+        filters.Count - 1
+    )
+    {
+        json.Append(",");
+    }
+
+
+    json.AppendLine();
 }
-catch (Exception ex)
+
+
+json.AppendLine("  ]");
+json.AppendLine("}");
+
+
+// ============================================================================
+// HARD VALIDATION
+//
+// Prevents another apparently-successful export using legacy signatures.
+// ============================================================================
+
+string finalJson =
+    json.ToString();
+
+
+if (
+    finalJson.IndexOf(
+        "\"parameterKey\":\"GUID:",
+        StringComparison.Ordinal
+    ) >= 0
+)
 {
-    TaskDialog.Show(
-        "Office Filter Library - Error",
-        ex.ToString()
-    );
+    if (
+        finalJson.IndexOf(
+            "PARAM=GUID:",
+            StringComparison.Ordinal
+        ) < 0
+    )
+    {
+        TaskDialog.Show(
+            "Office Filter Export",
+            "EXPORT ABORTED.\n\n" +
+            "Shared parameter GUID keys were found, but the " +
+            "canonical signatures do not contain PARAM=GUID:.\n\n" +
+            "No JSON file has been written."
+        );
+
+        return;
+    }
 }
+
+
+if (
+    finalJson.IndexOf(
+        "\"parameterKey\":\"BIP:",
+        StringComparison.Ordinal
+    ) >= 0
+)
+{
+    if (
+        finalJson.IndexOf(
+            "PARAM=BIP:",
+            StringComparison.Ordinal
+        ) < 0
+    )
+    {
+        TaskDialog.Show(
+            "Office Filter Export",
+            "EXPORT ABORTED.\n\n" +
+            "Built-in parameter keys were found, but the " +
+            "canonical signatures do not contain PARAM=BIP:.\n\n" +
+            "No JSON file has been written."
+        );
+
+        return;
+    }
+}
+
+
+// ============================================================================
+// SAVE
+// ============================================================================
+
+File.WriteAllText(
+    outputPath,
+    finalJson,
+    new UTF8Encoding(false)
+);
+
+
+// ============================================================================
+// SUCCESS
+// ============================================================================
+
+int portableGuidOccurrences = 0;
+int portableBipOccurrences = 0;
+
+
+int searchIndex = 0;
+
+while (
+    (
+        searchIndex =
+            finalJson.IndexOf(
+                "PARAM=GUID:",
+                searchIndex,
+                StringComparison.Ordinal
+            )
+    ) >= 0
+)
+{
+    portableGuidOccurrences++;
+    searchIndex += 11;
+}
+
+
+searchIndex = 0;
+
+while (
+    (
+        searchIndex =
+            finalJson.IndexOf(
+                "PARAM=BIP:",
+                searchIndex,
+                StringComparison.Ordinal
+            )
+    ) >= 0
+)
+{
+    portableBipOccurrences++;
+    searchIndex += 10;
+}
+
+
+TaskDialog.Show(
+    "Office Filter Export",
+    "Office filter library exported successfully.\n\n" +
+
+    "Schema: 1.1\n" +
+    "Filters: " +
+    filters.Count.ToString(
+        CultureInfo.InvariantCulture
+    ) +
+    "\n" +
+
+    "PARAM=GUID occurrences: " +
+    portableGuidOccurrences.ToString(
+        CultureInfo.InvariantCulture
+    ) +
+    "\n" +
+
+    "PARAM=BIP occurrences: " +
+    portableBipOccurrences.ToString(
+        CultureInfo.InvariantCulture
+    ) +
+    "\n\n" +
+
+    outputPath
+);
