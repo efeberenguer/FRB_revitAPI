@@ -3184,11 +3184,7 @@ if (
 
 // ============================================================================
 // BLOCK 6
-// CATEGORIES DATASET + BUSINESS CATEGORY CLASSIFICATION
-//
-// Creates one row per:
-//
-//     Filter x Category
+// CATEGORY EXTRACTION + BUSINESS CLASSIFICATION
 //
 // Business groups:
 //
@@ -3203,11 +3199,23 @@ if (
 //     Unclassified
 //
 // IMPORTANT:
-// This uses an explicit BuiltInCategory mapping.
-// Anything not mapped falls back to:
 //
-//     Category Group = Other
+// "Other" is a legitimate classified business group.
+// It does NOT mean that the category is unknown.
+//
+// Any category not explicitly mapped below becomes:
+//
+//     Category Group                 = Other
 //     Category Classification Status = Unclassified
+//
+// The mapping uses:
+//
+// 1. BuiltInCategory enum names resolved at runtime.
+//    This avoids compile failures when enum members differ between
+//    Revit versions.
+//
+// 2. Explicit numeric BuiltInCategory IDs for categories found during
+//    validation of the real project.
 //
 // ============================================================================
 
@@ -3221,114 +3229,267 @@ List<Dictionary<string, object>> categoryRecords =
 
 
 // ============================================================================
-// EXPLICIT BUILT-IN CATEGORY GROUP MAP
+// BUSINESS CATEGORY MAP
 //
-// Keep this intentionally explicit.
-// Do not infer based on CategoryType alone.
-//
-// Add categories here as office standards evolve.
+// Key = BuiltInCategory integer value / Category ElementId
 // ============================================================================
 
-Dictionary<BuiltInCategory, string> categoryGroupMap =
-    new Dictionary<BuiltInCategory, string>();
+Dictionary<long, string> categoryGroupMap =
+    new Dictionary<long, string>();
+
+
+// ============================================================================
+// ADD CATEGORY BY BUILTIN ENUM NAME
+//
+// Runtime resolution means a category name that does not exist in the
+// installed Revit version is simply ignored rather than causing compilation
+// to fail.
+//
+// ============================================================================
+
+Action<string, string> AddBuiltInCategoryByName =
+    delegate(
+        string builtInCategoryName,
+        string businessGroup
+    )
+{
+    try
+    {
+        BuiltInCategory bic;
+
+        if (
+            Enum.TryParse<BuiltInCategory>(
+                builtInCategoryName,
+                out bic
+            )
+        )
+        {
+            long id =
+                Convert.ToInt64(
+                    bic,
+                    CultureInfo.InvariantCulture
+                );
+
+
+            categoryGroupMap[id] =
+                businessGroup;
+        }
+    }
+    catch
+    {
+        // Intentionally ignored.
+        // Missing enum members are handled by explicit ID mapping where
+        // required.
+    }
+};
+
+
+// ============================================================================
+// ADD CATEGORY BY EXPLICIT ID
+// ============================================================================
+
+Action<long, string> AddBuiltInCategoryById =
+    delegate(
+        long categoryId,
+        string businessGroup
+    )
+{
+    categoryGroupMap[categoryId] =
+        businessGroup;
+};
 
 
 // ============================================================================
 // MODEL
 // ============================================================================
 
-BuiltInCategory[] modelCategories =
+string[] modelBuiltInCategoryNames =
 {
-    BuiltInCategory.OST_Walls,
-    BuiltInCategory.OST_Floors,
-    BuiltInCategory.OST_Roofs,
-    BuiltInCategory.OST_Ceilings,
-    BuiltInCategory.OST_Doors,
-    BuiltInCategory.OST_Windows,
-    BuiltInCategory.OST_CurtainWallPanels,
-    BuiltInCategory.OST_CurtainWallMullions,
+    // ------------------------------------------------------------------------
+    // Architecture
+    // ------------------------------------------------------------------------
 
-    BuiltInCategory.OST_GenericModel,
-    BuiltInCategory.OST_Furniture,
-    BuiltInCategory.OST_FurnitureSystems,
-    BuiltInCategory.OST_Casework,
-    BuiltInCategory.OST_SpecialityEquipment,
+    "OST_Walls",
+    "OST_Floors",
+    "OST_Roofs",
+    "OST_Ceilings",
+    "OST_Doors",
+    "OST_Windows",
+    "OST_CurtainWallPanels",
+    "OST_CurtainWallMullions",
+    "OST_Curtain_Systems",
+    "OST_GenericModel",
+    "OST_Furniture",
+    "OST_FurnitureSystems",
+    "OST_Casework",
+    "OST_SpecialityEquipment",
+    "OST_PlumbingFixtures",
+    "OST_LightingFixtures",
+    "OST_LightingDevices",
+    "OST_ElectricalFixtures",
+    "OST_ElectricalEquipment",
+    "OST_MechanicalEquipment",
+    "OST_CommunicationDevices",
+    "OST_DataDevices",
+    "OST_FireAlarmDevices",
+    "OST_NurseCallDevices",
+    "OST_SecurityDevices",
+    "OST_Sprinklers",
+    "OST_TelephoneDevices",
 
-    BuiltInCategory.OST_PlumbingFixtures,
-    BuiltInCategory.OST_MechanicalEquipment,
-    BuiltInCategory.OST_ElectricalEquipment,
-    BuiltInCategory.OST_ElectricalFixtures,
-    BuiltInCategory.OST_LightingFixtures,
-    BuiltInCategory.OST_LightingDevices,
-    BuiltInCategory.OST_DataDevices,
-    BuiltInCategory.OST_FireAlarmDevices,
-    BuiltInCategory.OST_CommunicationDevices,
-    BuiltInCategory.OST_SecurityDevices,
-    BuiltInCategory.OST_NurseCallDevices,
+    "OST_Stairs",
+    "OST_StairsRuns",
+    "OST_StairsLandings",
+    "OST_StairsSupports",
+    "OST_Ramps",
+    "OST_Railings",
+    "OST_Handrails",
+    "OST_TopRails",
 
-    BuiltInCategory.OST_DuctCurves,
-    BuiltInCategory.OST_DuctFitting,
-    BuiltInCategory.OST_DuctAccessory,
-    BuiltInCategory.OST_DuctTerminal,
-    BuiltInCategory.OST_FlexDuctCurves,
+    "OST_Columns",
+    "OST_StructuralColumns",
+    "OST_StructuralFraming",
+    "OST_StructuralFoundation",
+    "OST_StructuralTruss",
+    "OST_StructuralStiffener",
+    "OST_StructuralFramingSystem",
 
-    BuiltInCategory.OST_PipeCurves,
-    BuiltInCategory.OST_PipeFitting,
-    BuiltInCategory.OST_PipeAccessory,
-    BuiltInCategory.OST_FlexPipeCurves,
-    BuiltInCategory.OST_Sprinklers,
+    "OST_Parts",
+    "OST_Assemblies",
 
-    BuiltInCategory.OST_CableTray,
-    BuiltInCategory.OST_CableTrayFitting,
-    BuiltInCategory.OST_Conduit,
-    BuiltInCategory.OST_ConduitFitting,
+    "OST_ShaftOpening",
+    "OST_FloorOpening",
+    "OST_WallOpening",
 
-    BuiltInCategory.OST_StructuralColumns,
-    BuiltInCategory.OST_StructuralFraming,
-    BuiltInCategory.OST_StructuralFoundation,
-    BuiltInCategory.OST_Rebar,
-    BuiltInCategory.OST_AreaRein,
-    BuiltInCategory.OST_PathRein,
+    "OST_Site",
+    "OST_Topography",
+    "OST_Toposolid",
+    "OST_Planting",
+    "OST_Parking",
+    "OST_Roads",
+    "OST_Property",
+    "OST_PropertyLines",
 
-    BuiltInCategory.OST_Columns,
-    BuiltInCategory.OST_Stairs,
-    BuiltInCategory.OST_Ramps,
-    BuiltInCategory.OST_Railings,
+    "OST_Rooms",
+    "OST_MEPSpaces",
+    "OST_Areas",
 
-    BuiltInCategory.OST_Rooms,
-    BuiltInCategory.OST_MEPSpaces,
-    BuiltInCategory.OST_Areas,
+    // ------------------------------------------------------------------------
+    // Roof / floor accessories
+    // ------------------------------------------------------------------------
 
-    BuiltInCategory.OST_Site,
-    BuiltInCategory.OST_Topography,
-    BuiltInCategory.OST_Parking,
-    BuiltInCategory.OST_Planting,
+    "OST_EdgeSlab",
+    "OST_Fascia",
+    "OST_Gutter",
+    "OST_RoofSoffit",
+    "OST_WallSweep",
 
-    BuiltInCategory.OST_Mass,
-    BuiltInCategory.OST_Entourage,
+    // ------------------------------------------------------------------------
+    // Massing
+    // ------------------------------------------------------------------------
 
-    BuiltInCategory.OST_Materials,
-    BuiltInCategory.OST_Parts,
-    BuiltInCategory.OST_Assemblies
+    "OST_Mass",
+    "OST_MassFloor",
+    "OST_MassOpening",
+    "OST_MassSkylights",
+    "OST_MassGlazing",
+    "OST_MassRoof",
+    "OST_MassExteriorWall",
+    "OST_MassInteriorWall",
+    "OST_MassZone",
+
+    // ------------------------------------------------------------------------
+    // MEP
+    // ------------------------------------------------------------------------
+
+    "OST_DuctCurves",
+    "OST_DuctFitting",
+    "OST_DuctAccessory",
+    "OST_DuctTerminal",
+    "OST_FlexDuctCurves",
+    "OST_DuctSystem",
+
+    "OST_PipeCurves",
+    "OST_PipeFitting",
+    "OST_PipeAccessory",
+    "OST_FlexPipeCurves",
+    "OST_PipingSystem",
+
+    "OST_CableTray",
+    "OST_CableTrayFitting",
+    "OST_Conduit",
+    "OST_ConduitFitting",
+
+    "OST_DuctInsulations",
+    "OST_DuctLinings",
+    "OST_PipeInsulations",
+
+    "OST_DuctPlaceholders",
+    "OST_PipePlaceholders",
+
+    "OST_Wire",
+
+    "OST_HVAC_Zones",
+
+    // ------------------------------------------------------------------------
+    // Fabrication
+    // ------------------------------------------------------------------------
+
+    "OST_FabricationDuctwork",
+    "OST_FabricationPipework",
+    "OST_FabricationContainment",
+    "OST_FabricationHangers",
+
+    // ------------------------------------------------------------------------
+    // Structural reinforcement
+    // ------------------------------------------------------------------------
+
+    "OST_Rebar",
+    "OST_AreaRein",
+    "OST_PathRein",
+    "OST_FabricReinforcement",
+    "OST_FabricAreas",
+    "OST_RebarCoupler",
+
+    // ------------------------------------------------------------------------
+    // Structural connections
+    // ------------------------------------------------------------------------
+
+    "OST_StructConnections",
+    "OST_StructConnectionAnchors",
+    "OST_StructConnectionBolts",
+    "OST_StructConnectionHoles",
+    "OST_StructConnectionOthers",
+    "OST_StructConnectionPlates",
+    "OST_StructConnectionProfiles",
+    "OST_StructConnectionShearStuds",
+    "OST_StructConnectionWelds",
+    "OST_StructConnectionModifiers",
+    "OST_StructConnectionSymbol",
+
+    // ------------------------------------------------------------------------
+    // Miscellaneous physical/model categories
+    // ------------------------------------------------------------------------
+
+    "OST_Signage",
+    "OST_AudioVisualDevices",
+    "OST_MedicalEquipment",
+    "OST_FoodServiceEquipment",
+    "OST_FireProtection",
+    "OST_Hardscape",
+    "OST_TemporaryStructure"
 };
 
 
 foreach (
-    BuiltInCategory bic
-    in modelCategories
+    string builtInCategoryName
+    in modelBuiltInCategoryNames
 )
 {
-    if (
-        !categoryGroupMap.ContainsKey(
-            bic
-        )
-    )
-    {
-        categoryGroupMap.Add(
-            bic,
-            "Model"
-        );
-    }
+    AddBuiltInCategoryByName(
+        builtInCategoryName,
+        "Model"
+    );
 }
 
 
@@ -3336,112 +3497,541 @@ foreach (
 // ANNOTATION
 // ============================================================================
 
-BuiltInCategory[] annotationCategories =
+string[] annotationBuiltInCategoryNames =
 {
-    BuiltInCategory.OST_DetailComponents,
-    BuiltInCategory.OST_GenericAnnotation,
-    BuiltInCategory.OST_TextNotes,
-    BuiltInCategory.OST_Dimensions,
-    BuiltInCategory.OST_FilledRegion,
-    BuiltInCategory.OST_Lines,
+    "OST_DetailComponents",
+    "OST_GenericAnnotation",
+    "OST_TextNotes",
+    "OST_Dimensions",
+    "OST_FilledRegion",
+    "OST_Lines",
 
-    BuiltInCategory.OST_DoorTags,
-    BuiltInCategory.OST_WindowTags,
-    BuiltInCategory.OST_WallTags,
-    BuiltInCategory.OST_FloorTags,
-    BuiltInCategory.OST_RoofTags,
-    BuiltInCategory.OST_CeilingTags,
-    BuiltInCategory.OST_RoomTags,
-    BuiltInCategory.OST_AreaTags,
-    BuiltInCategory.OST_MEPSpaceTags,
-    BuiltInCategory.OST_MaterialTags,
-    BuiltInCategory.OST_MultiCategoryTags,
+    "OST_Tags",
+    "OST_MultiCategoryTags",
+    "OST_MaterialTags",
 
-    BuiltInCategory.OST_StructuralFramingTags,
-    BuiltInCategory.OST_StructuralColumnTags,
-    BuiltInCategory.OST_StructuralFoundationTags,
+    "OST_WallTags",
+    "OST_DoorTags",
+    "OST_WindowTags",
+    "OST_FloorTags",
+    "OST_RoofTags",
+    "OST_CeilingTags",
+    "OST_FurnitureTags",
+    "OST_CaseworkTags",
+    "OST_GenericModelTags",
+    "OST_StructuralFramingTags",
+    "OST_StructuralColumnTags",
+    "OST_StructuralFoundationTags",
+    "OST_MechanicalEquipmentTags",
+    "OST_PlumbingFixtureTags",
+    "OST_RoomTags",
+    "OST_MEPSpaceTags",
+    "OST_AreaTags",
 
-    BuiltInCategory.OST_MechanicalEquipmentTags,
-    BuiltInCategory.OST_PlumbingFixtureTags,
-    BuiltInCategory.OST_ElectricalEquipmentTags,
-    BuiltInCategory.OST_ElectricalFixtureTags,
-    BuiltInCategory.OST_LightingFixtureTags,
-    BuiltInCategory.OST_DuctTags,
-    BuiltInCategory.OST_PipeTags,
+    "OST_SpotElevations",
+    "OST_SpotCoordinates",
+    "OST_SpotSlopes",
 
-    BuiltInCategory.OST_KeynoteTags,
-    BuiltInCategory.OST_SpotElevations,
-    BuiltInCategory.OST_SpotCoordinates,
-    BuiltInCategory.OST_SpotSlopes
+    "OST_KeynoteTags",
+
+    "OST_RevisionCloudTags",
+
+    "OST_InsulationTags",
+    "OST_PipeTags",
+    "OST_DuctTags",
+    "OST_DuctTerminalTags",
+    "OST_PipeAccessoryTags",
+    "OST_PipeFittingTags",
+    "OST_DuctAccessoryTags",
+    "OST_DuctFittingTags",
+
+    "OST_ElectricalEquipmentTags",
+    "OST_ElectricalFixtureTags",
+    "OST_LightingFixtureTags",
+    "OST_LightingDeviceTags",
+
+    "OST_SprinklerTags"
 };
 
 
 foreach (
-    BuiltInCategory bic
-    in annotationCategories
+    string builtInCategoryName
+    in annotationBuiltInCategoryNames
 )
 {
-    if (
-        !categoryGroupMap.ContainsKey(
-            bic
-        )
-    )
-    {
-        categoryGroupMap.Add(
-            bic,
-            "Annotation"
-        );
-    }
+    AddBuiltInCategoryByName(
+        builtInCategoryName,
+        "Annotation"
+    );
 }
 
 
 // ============================================================================
 // VIEWS / DOCUMENTATION
-//
-// Sections / Elevations / Callouts deliberately belong here,
-// separate from annotations such as Detail Items and Text Notes.
 // ============================================================================
 
-BuiltInCategory[] documentationCategories =
+string[] documentationBuiltInCategoryNames =
 {
-    BuiltInCategory.OST_Sections,
-    BuiltInCategory.OST_Elev,
-    BuiltInCategory.OST_Callouts,
+    // ------------------------------------------------------------------------
+    // Views
+    // ------------------------------------------------------------------------
 
-    BuiltInCategory.OST_Sheets,
-    BuiltInCategory.OST_Viewports,
+    "OST_Views",
+    "OST_Sections",
+    "OST_Elev",
+    "OST_Callouts",
 
-    BuiltInCategory.OST_Views,
-    BuiltInCategory.OST_Schedules,
+    // ------------------------------------------------------------------------
+    // Sheets / view placement
+    // ------------------------------------------------------------------------
 
-    BuiltInCategory.OST_ReferenceViewer,
+    "OST_Sheets",
+    "OST_Viewports",
 
-    BuiltInCategory.OST_RevisionClouds,
-    BuiltInCategory.OST_Revisions
+    // ------------------------------------------------------------------------
+    // Schedules
+    // ------------------------------------------------------------------------
+
+    "OST_Schedules",
+    "OST_ScheduleGraphics",
+
+    // ------------------------------------------------------------------------
+    // Datum / documentation controls
+    // ------------------------------------------------------------------------
+
+    "OST_Grids",
+    "OST_Levels",
+    "OST_ReferencePlanes",
+    "OST_ReferenceLines",
+
+    // ------------------------------------------------------------------------
+    // Revision / reference
+    // ------------------------------------------------------------------------
+
+    "OST_RevisionClouds",
+    "OST_Revisions",
+    "OST_ReferenceViewer",
+
+    // ------------------------------------------------------------------------
+    // Navigation / analysis graphics
+    // ------------------------------------------------------------------------
+
+    "OST_PathOfTravelLines"
 };
 
 
 foreach (
-    BuiltInCategory bic
-    in documentationCategories
+    string builtInCategoryName
+    in documentationBuiltInCategoryNames
 )
 {
-    if (
-        !categoryGroupMap.ContainsKey(
-            bic
-        )
-    )
-    {
-        categoryGroupMap.Add(
-            bic,
-            "Views / Documentation"
-        );
-    }
+    AddBuiltInCategoryByName(
+        builtInCategoryName,
+        "Views / Documentation"
+    );
 }
 
 
 // ============================================================================
-// RESOLVE BUSINESS GROUP
+// OTHER
+//
+// These categories are intentionally classified as Other.
+//
+// They are generally analytical, calculation-oriented or load-related rather
+// than physical model geometry, annotation or view/documentation content.
+//
+// ============================================================================
+
+string[] otherBuiltInCategoryNames =
+{
+    // ------------------------------------------------------------------------
+    // Structural loads
+    // ------------------------------------------------------------------------
+
+    "OST_PointLoads",
+    "OST_LineLoads",
+    "OST_AreaLoads",
+
+    "OST_InternalPointLoads",
+    "OST_InternalLineLoads",
+    "OST_InternalAreaLoads",
+
+    // ------------------------------------------------------------------------
+    // Analytical model
+    // ------------------------------------------------------------------------
+
+    "OST_AnalyticalNodes",
+    "OST_AnalyticalLinks",
+    "OST_AnalyticalSurfaces",
+    "OST_AnalyticalSpaces",
+
+    // ------------------------------------------------------------------------
+    // Other analytical/system categories
+    // ------------------------------------------------------------------------
+
+    "OST_AnalyticalPipeConnections"
+};
+
+
+foreach (
+    string builtInCategoryName
+    in otherBuiltInCategoryNames
+)
+{
+    AddBuiltInCategoryByName(
+        builtInCategoryName,
+        "Other"
+    );
+}
+
+
+// ============================================================================
+// EXPLICIT REVIT 2024 CATEGORY-ID FALLBACKS
+//
+// These IDs came directly from the Categories worksheet generated against
+// the validated 295-filter project.
+//
+// They are added explicitly so the business mapping is independent of any
+// BuiltInCategory enum naming differences.
+//
+// ============================================================================
+
+
+// ============================================================================
+// MODEL - EXPLICIT IDS
+// ============================================================================
+
+long[] explicitModelCategoryIds =
+{
+    // Slab Edges
+    -2001392,
+
+    // Vertical Circulation
+    -2001052,
+
+    // Railings
+    -2000126,
+
+    // Structural Rebar Couplers
+    -2009060,
+
+    // Structural connection subcategories
+    // Modifiers
+    -2009047,
+
+    // Welds
+    -2009046,
+
+    // Holes
+    -2009045,
+
+    // Shear Studs
+    -2009044,
+
+    // Others
+    -2009042,
+
+    // Bolts
+    -2009041,
+
+    // Anchors
+    -2009039,
+
+    // Plates
+    -2009038,
+
+    // Profiles
+    -2009037,
+
+    // Symbol
+    -2009033,
+
+    // Structural Connections
+    -2009030,
+
+    // Structural Fabric Areas
+    -2009017,
+
+    // Structural Fabric Reinforcement
+    -2009016,
+
+    // Plumbing Equipment
+    -2008234,
+
+    // Mechanical Control Devices
+    -2008232,
+
+    // Mass Opening
+    -2003417,
+
+    // Mass Skylight
+    -2003416,
+
+    // Mass Glazing
+    -2003415,
+
+    // Mass Roof
+    -2003414,
+
+    // Mass Exterior Wall
+    -2003413,
+
+    // Mass Interior Wall
+    -2003412,
+
+    // Mass Zone
+    -2003411,
+
+    // Mass Floor
+    -2003403,
+
+    // Roof Soffits
+    -2001393,
+
+    // Gutters
+    -2001391,
+
+    // Fascias
+    -2001390,
+
+    // Structural Stiffeners
+    -2001354,
+
+    // Structural Trusses
+    -2001336,
+
+    // Structural Beam Systems
+    -2001327,
+
+    // Property Lines
+    -2001265,
+
+    // Pads
+    -2001263,
+
+    // Roads
+    -2001220,
+
+    // Toposolid
+    -2001079,
+
+    // Signage
+    -2001058,
+
+    // Audio Visual Devices
+    -2001055,
+
+    // Fire Protection
+    -2001049,
+
+    // Medical Equipment
+    -2001046,
+
+    // Food Service Equipment
+    -2001043,
+
+    // Temporary Structures
+    -2001039,
+
+    // Hardscape
+    -2001036,
+
+    // Shaft Openings
+    -2000996,
+
+    // Terminations
+    -2000949,
+
+    // Supports
+    -2000948,
+
+    // Handrails
+    -2000947,
+
+    // Top Rails
+    -2000946,
+
+    // Curtain Systems
+    -2000340,
+
+    // Wall Sweeps
+    -2000181,
+
+    // Balusters
+    -2000127,
+
+    // MEP Fabrication Pipework
+    -2008208,
+
+    // MEP Fabrication Ductwork
+    -2008193,
+
+    // Pipe Placeholders
+    -2008161,
+
+    // Duct Placeholders
+    -2008160,
+
+    // Duct Linings
+    -2008124,
+
+    // Duct Insulations
+    -2008123,
+
+    // Pipe Insulations
+    -2008122,
+
+    // Piping Systems
+    -2008043,
+
+    // Duct Systems
+    -2008015,
+
+    // Insulation
+    -2008221,
+
+    // Lining
+    -2008220,
+
+    // MEP Fabrication Containment
+    -2008212,
+
+    // MEP Fabrication Hangers
+    -2008203,
+
+    // Fabrication Insulation
+    -2008198,
+
+    // HVAC Zones
+    -2008107,
+
+    // Switch System
+    -2008101,
+
+    // Telephone Devices
+    -2008075,
+
+    // Wires
+    -2008039,
+
+    // System-Zones
+    -2001001,
+    
+    // Entourage
+    -2001370
+};
+
+
+foreach (
+    long categoryId
+    in explicitModelCategoryIds
+)
+{
+    AddBuiltInCategoryById(
+        categoryId,
+        "Model"
+    );
+}
+
+
+// ============================================================================
+// VIEWS / DOCUMENTATION - EXPLICIT IDS
+// ============================================================================
+
+long[] explicitDocumentationCategoryIds =
+{
+    // <Path of Travel Lines>
+    -2000833,
+
+    // Reference Lines
+    -2000083,
+
+    // Reference Planes
+    -2000530,
+
+    // Grids
+    -2000220,
+
+    // Levels
+    -2000240
+};
+
+
+foreach (
+    long categoryId
+    in explicitDocumentationCategoryIds
+)
+{
+    AddBuiltInCategoryById(
+        categoryId,
+        "Views / Documentation"
+    );
+}
+
+
+// ============================================================================
+// OTHER - EXPLICIT IDS
+// ============================================================================
+
+long[] explicitOtherCategoryIds =
+{
+    // ------------------------------------------------------------------------
+    // Structural loads
+    // ------------------------------------------------------------------------
+
+    // Internal Area Loads
+    -2005207,
+
+    // Internal Line Loads
+    -2005206,
+
+    // Internal Point Loads
+    -2005205,
+
+    // Area Loads
+    -2005203,
+
+    // Line Loads
+    -2005202,
+
+    // Point Loads
+    -2005201,
+
+    // ------------------------------------------------------------------------
+    // Analytical model
+    // ------------------------------------------------------------------------
+
+    // Analytical Links
+    -2009657,
+
+    // Analytical Nodes
+    -2009645,
+
+    // Analytical Surfaces
+    -2008186,
+
+    // Analytical Spaces
+    -2008185,
+
+    // Analytical Pipe Connections
+    -2000983
+};
+
+
+foreach (
+    long categoryId
+    in explicitOtherCategoryIds
+)
+{
+    AddBuiltInCategoryById(
+        categoryId,
+        "Other"
+    );
+}
+
+
+// ============================================================================
+// GET BUSINESS CATEGORY GROUP
 // ============================================================================
 
 Func<Category, string> GetBusinessCategoryGroup =
@@ -3450,38 +4040,33 @@ Func<Category, string> GetBusinessCategoryGroup =
     if (category == null)
         return "Other";
 
-    try
-    {
-        long categoryIdValue =
-            GetElementIdInteger(
-                category.Id
-            );
 
-        BuiltInCategory bic =
-            (BuiltInCategory)categoryIdValue;
+    long categoryId =
+        GetElementIdInteger(
+            category.Id
+        );
 
-        string mappedGroup;
 
-        if (
-            categoryGroupMap.TryGetValue(
-                bic,
-                out mappedGroup
-            )
+    string group;
+
+
+    if (
+        categoryGroupMap.TryGetValue(
+            categoryId,
+            out group
         )
-        {
-            return mappedGroup;
-        }
-    }
-    catch
+    )
     {
+        return group;
     }
+
 
     return "Other";
 };
 
 
 // ============================================================================
-// RESOLVE CLASSIFICATION STATUS
+// GET CLASSIFICATION STATUS
 // ============================================================================
 
 Func<Category, string> GetCategoryClassificationStatus =
@@ -3490,35 +4075,45 @@ Func<Category, string> GetCategoryClassificationStatus =
     if (category == null)
         return "Unclassified";
 
-    try
-    {
-        long categoryIdValue =
-            GetElementIdInteger(
-                category.Id
-            );
 
-        BuiltInCategory bic =
-            (BuiltInCategory)categoryIdValue;
+    long categoryId =
+        GetElementIdInteger(
+            category.Id
+        );
 
-        if (
-            categoryGroupMap.ContainsKey(
-                bic
-            )
+
+    if (
+        categoryGroupMap.ContainsKey(
+            categoryId
         )
-        {
-            return "Classified";
-        }
-    }
-    catch
+    )
     {
+        return "Classified";
     }
+
 
     return "Unclassified";
 };
 
 
 // ============================================================================
-// PROCESS EVERY FILTER CATEGORY
+// CATEGORY GROUP DISPLAY ORDER
+// ============================================================================
+
+Dictionary<string, int> categoryGroupSortOrder =
+    new Dictionary<string, int>(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        { "Model", 1 },
+        { "Annotation", 2 },
+        { "Views / Documentation", 3 },
+        { "Other", 4 }
+    };
+
+
+// ============================================================================
+// EXTRACT CATEGORIES FOR EVERY PARAMETER FILTER
 // ============================================================================
 
 foreach (
@@ -3531,25 +4126,23 @@ foreach (
             filter.Id
         );
 
-    string filterName =
-        filter.Name ?? "";
+
+    Dictionary<string, object> filterRecord =
+        projectFilterRecords.FirstOrDefault(
+            r =>
+                Convert.ToInt64(
+                    r["Filter ID"],
+                    CultureInfo.InvariantCulture
+                ) ==
+                filterId
+        );
 
 
-    Dictionary<string, object> filterRecord;
-
-    if (
-        !projectFilterById.TryGetValue(
-            filterId,
-            out filterRecord
-        )
-    )
-    {
+    if (filterRecord == null)
         continue;
-    }
 
 
-    ICollection<ElementId> categoryIds =
-        null;
+    ICollection<ElementId> categoryIds;
 
 
     try
@@ -3564,15 +4157,7 @@ foreach (
     }
 
 
-    if (categoryIds == null)
-    {
-        categoryIds =
-            new List<ElementId>();
-    }
-
-
-    // Distinct group summary for Filters worksheet.
-    HashSet<string> filterGroups =
+    HashSet<string> filterBusinessGroups =
         new HashSet<string>(
             StringComparer.OrdinalIgnoreCase
         );
@@ -3610,45 +4195,28 @@ foreach (
         }
 
 
+        long categoryIdValue =
+            GetElementIdInteger(
+                categoryId
+            );
+
+
         string categoryName =
-            "";
-
-
-        if (category != null)
-        {
-            categoryName =
-                category.Name ?? "";
-        }
-
-
-        if (
-            string.IsNullOrWhiteSpace(
-                categoryName
-            )
-        )
-        {
-            categoryName =
-                "<Unknown Category>";
-        }
+            category != null
+            ? category.Name
+            : "<Unknown Category>";
 
 
         string categoryGroup =
-            GetBusinessCategoryGroup(
-                category
-            );
+            category != null
+            ? GetBusinessCategoryGroup(category)
+            : "Other";
+
 
         string classificationStatus =
-            GetCategoryClassificationStatus(
-                category
-            );
-
-
-        filterGroups.Add(
-            categoryGroup
-        );
-
-
-        categoryCount++;
+            category != null
+            ? GetCategoryClassificationStatus(category)
+            : "Unclassified";
 
 
         Dictionary<string, object> categoryRecord =
@@ -3660,22 +4228,26 @@ foreach (
         categoryRecord["Project ID"] =
             projectId;
 
+
         categoryRecord["Filter ID"] =
             filterId;
 
+
         categoryRecord["Filter Name"] =
-            filterName;
+            filter.Name;
+
 
         categoryRecord["Category ID"] =
-            GetElementIdInteger(
-                categoryId
-            );
+            categoryIdValue;
+
 
         categoryRecord["Category Name"] =
             categoryName;
 
+
         categoryRecord["Category Group"] =
             categoryGroup;
+
 
         categoryRecord["Category Classification Status"] =
             classificationStatus;
@@ -3683,6 +4255,14 @@ foreach (
 
         categoryRecords.Add(
             categoryRecord
+        );
+
+
+        categoryCount++;
+
+
+        filterBusinessGroups.Add(
+            categoryGroup
         );
     }
 
@@ -3695,105 +4275,100 @@ foreach (
         categoryCount;
 
 
-    // Fixed ordering keeps aggregation consistent between projects.
-
-    List<string> orderedGroups =
-        new List<string>();
-
-
-    if (
-        filterGroups.Contains(
-            "Model"
-        )
-    )
-    {
-        orderedGroups.Add(
-            "Model"
-        );
-    }
-
-
-    if (
-        filterGroups.Contains(
-            "Annotation"
-        )
-    )
-    {
-        orderedGroups.Add(
-            "Annotation"
-        );
-    }
-
-
-    if (
-        filterGroups.Contains(
-            "Views / Documentation"
-        )
-    )
-    {
-        orderedGroups.Add(
-            "Views / Documentation"
-        );
-    }
-
-
-    if (
-        filterGroups.Contains(
-            "Other"
-        )
-    )
-    {
-        orderedGroups.Add(
-            "Other"
-        );
-    }
+    List<string> orderedBusinessGroups =
+        filterBusinessGroups
+            .OrderBy(
+                g =>
+                    categoryGroupSortOrder.ContainsKey(g)
+                    ? categoryGroupSortOrder[g]
+                    : 99
+            )
+            .ThenBy(
+                g => g,
+                StringComparer.OrdinalIgnoreCase
+            )
+            .ToList();
 
 
     filterRecord["Category Groups"] =
         string.Join(
             "; ",
-            orderedGroups
+            orderedBusinessGroups
         );
 }
 
 
 // ============================================================================
-// CATEGORY SUMMARY COUNTS
+// SORT CATEGORY TABLE
 // ============================================================================
 
-int modelCategoryRows =
+categoryRecords =
+    categoryRecords
+        .OrderBy(
+            r =>
+                Convert.ToString(
+                    r["Filter Name"]
+                ),
+            StringComparer.OrdinalIgnoreCase
+        )
+        .ThenBy(
+            r =>
+                Convert.ToString(
+                    r["Category Group"]
+                ),
+            StringComparer.OrdinalIgnoreCase
+        )
+        .ThenBy(
+            r =>
+                Convert.ToString(
+                    r["Category Name"]
+                ),
+            StringComparer.OrdinalIgnoreCase
+        )
+        .ToList();
+
+
+// ============================================================================
+// SUMMARY COUNTS
+// ============================================================================
+
+int modelCategoryRowCount =
     categoryRecords.Count(
         r =>
             Convert.ToString(
                 r["Category Group"]
-            ) == "Model"
+            ) ==
+            "Model"
     );
 
 
-int annotationCategoryRows =
+int annotationCategoryRowCount =
     categoryRecords.Count(
         r =>
             Convert.ToString(
                 r["Category Group"]
-            ) == "Annotation"
+            ) ==
+            "Annotation"
     );
 
 
-int documentationCategoryRows =
+int viewsDocumentationCategoryRowCount =
     categoryRecords.Count(
         r =>
             Convert.ToString(
                 r["Category Group"]
-            ) == "Views / Documentation"
+            ) ==
+            "Views / Documentation"
     );
 
 
-int otherCategoryRows =
+int otherCategoryRowCount =
     categoryRecords.Count(
         r =>
             Convert.ToString(
                 r["Category Group"]
-            ) == "Other"
+            ) ==
+            "Other"
     );
 
 
@@ -3802,32 +4377,13 @@ int unclassifiedCategoryRows =
         r =>
             Convert.ToString(
                 r["Category Classification Status"]
-            ) == "Unclassified"
+            ) ==
+            "Unclassified"
     );
 
 
 // ============================================================================
 // BLOCK 6 COMPLETE
-//
-// Available:
-//
-//     categoryRecords
-//
-// Each row contains:
-//
-//     Project ID
-//     Filter ID
-//     Filter Name
-//     Category ID
-//     Category Name
-//     Category Group
-//     Category Classification Status
-//
-// Filters records now also contain:
-//
-//     Category Count
-//     Category Groups
-//
 // ============================================================================
 
 // ============================================================================
@@ -7886,20 +8442,27 @@ for (
         // This is intentionally stricter than V1.
         // ====================================================================
 
-        bool substantialSimilarity =
-            sameParameters
-            ||
-            terminalRulesA.IsProperSubsetOf(
-                terminalRulesB
-            )
-            ||
-            terminalRulesB.IsProperSubsetOf(
-                terminalRulesA
-            )
-            ||
-            sharedTerminalRuleCount >= 2
-            ||
-            sharedRuleRatio >= 0.50;
+        bool ruleSubsetRelationship =
+		    terminalRulesA.Count > 0 &&
+		    terminalRulesB.Count > 0 &&
+		    (
+		        terminalRulesA.IsProperSubsetOf(
+		            terminalRulesB
+		        )
+		        ||
+		        terminalRulesB.IsProperSubsetOf(
+		            terminalRulesA
+		        )
+		    );
+		
+		
+		bool substantialSimilarity =
+		    ruleSubsetRelationship
+		    ||
+		    (
+		        sharedTerminalRuleCount >= 2 &&
+		        sharedRuleRatio >= 0.75
+		    );
 
 
         if (
@@ -8000,16 +8563,13 @@ for (
         // ====================================================================
 
         bool strongRelatedEvidence =
-            officeReferenceRelationship
-            ||
-            (
-                categoryIntersection &&
-                sameParameters &&
-                parametersA.Count > 0
-            )
-            ||
-            sharedTerminalRuleCount >= 2;
-
+		    officeReferenceRelationship
+		    ||
+		    (
+		        categoryIntersection &&
+		        sharedTerminalRuleCount >= 2 &&
+		        sharedRuleRatio >= 0.75
+		    );
 
         if (
             strongRelatedEvidence
