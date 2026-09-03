@@ -6013,12 +6013,26 @@ foreach (
 // ============================================================================
 
 // ============================================================================
-// BLOCK 9
-// DUPLICATE + OVERLAP ANALYSIS
+// BLOCK 9 V2
+// DUPLICATE + LOGICAL OVERLAP ANALYSIS
 //
-// Creates one row per meaningful Filter A / Filter B relationship.
+// Key changes from V1:
 //
-// Classifications:
+// 1. Contradictory AND conditions are detected and treated as mutually
+//    exclusive.
+//
+// 2. Routine Office <-> Office relationships are suppressed.
+//    The approved office library is treated as the baseline, not as something
+//    requiring PM review.
+//
+// 3. Sharing one terminal rule is NOT enough to claim logical overlap.
+//
+// 4. "Category Subset" now requires identical complete rules plus a true
+//    category subset relationship.
+//
+// 5. "Related" is deliberately much stricter.
+//
+// Output classifications:
 //
 //     Exact Duplicate
 //     Same Rules / Different Categories
@@ -6026,22 +6040,8 @@ foreach (
 //     Potential Logical Overlap
 //     Related
 //
-// No row is created for:
-//     No Significant Overlap
-//
-// Severity:
-//
-//     Exact Duplicate                  High
-//     Potential Logical Overlap        Medium
-//     Same Rules / Different Categories Low
-//     Category Subset                  Low
-//     Related                          Info
-//
-// Confidence:
-//
-//     High
-//     Medium
-//     Limited
+// Mutually exclusive pairs are detected internally but NOT written to the
+// Overlaps worksheet.
 //
 // ============================================================================
 
@@ -6082,7 +6082,7 @@ Func<long, HashSet<long>> GetFilterCategoryIds =
 
 
 // ============================================================================
-// FILTER TERMINAL RULES
+// FILTER RULE ROWS
 // ============================================================================
 
 Func<long, List<Dictionary<string, object>>> GetFilterRuleRows =
@@ -6108,11 +6108,11 @@ Func<long, List<Dictionary<string, object>>> GetFilterRuleRows =
 
 
 // ============================================================================
-// EXTRACT PARAMETER KEY FROM RULE SIGNATURE
+// PARAMETER KEY FROM CANONICAL RULE SIGNATURE
 //
 // Example:
 //
-// RULE|FilterStringRule|PARAM=BIP:-1002001|OP=Contains|VALUE=FAS_0
+//     RULE|FilterIntegerRule|PARAM=GUID:...|OP=Equals|VALUE=1
 //
 // ============================================================================
 
@@ -6163,35 +6163,34 @@ Func<string, string> GetParameterKeyFromRuleSignature =
     }
 
 
-    return
-        signature.Substring(
-            start,
-            end - start
-        );
+    return signature.Substring(
+        start,
+        end - start
+    );
 };
 
 
 // ============================================================================
-// FILTER PARAMETER SET
+// PARAMETER SET
 // ============================================================================
 
 Func<long, HashSet<string>> GetFilterParameterKeys =
     delegate(long filterId)
 {
-    HashSet<string> keys =
+    HashSet<string> result =
         new HashSet<string>(
             StringComparer.Ordinal
         );
 
 
     foreach (
-        Dictionary<string, object> ruleRow
+        Dictionary<string, object> row
         in GetFilterRuleRows(filterId)
     )
     {
         string signature =
             Convert.ToString(
-                ruleRow["Rule Signature"]
+                row["Rule Signature"]
             );
 
 
@@ -6207,21 +6206,19 @@ Func<long, HashSet<string>> GetFilterParameterKeys =
             )
         )
         {
-            keys.Add(
+            result.Add(
                 key
             );
         }
     }
 
 
-    return keys;
+    return result;
 };
 
 
 // ============================================================================
 // TERMINAL RULE SIGNATURE SET
-//
-// Useful for conservative subset/intersection testing.
 // ============================================================================
 
 Func<long, HashSet<string>> GetTerminalRuleSignatureSet =
@@ -6241,62 +6238,6 @@ Func<long, HashSet<string>> GetTerminalRuleSignatureSet =
             ),
         StringComparer.Ordinal
     );
-};
-
-
-// ============================================================================
-// SET RELATION HELPERS
-// ============================================================================
-
-Func<HashSet<long>, HashSet<long>, bool> LongSetsEqual =
-    delegate(
-        HashSet<long> a,
-        HashSet<long> b
-    )
-{
-    return
-        a.SetEquals(
-            b
-        );
-};
-
-
-Func<HashSet<string>, HashSet<string>, bool> StringSetsEqual =
-    delegate(
-        HashSet<string> a,
-        HashSet<string> b
-    )
-{
-    return
-        a.SetEquals(
-            b
-        );
-};
-
-
-Func<HashSet<long>, HashSet<long>, bool> LongSetsIntersect =
-    delegate(
-        HashSet<long> a,
-        HashSet<long> b
-    )
-{
-    return
-        a.Overlaps(
-            b
-        );
-};
-
-
-Func<HashSet<string>, HashSet<string>, bool> StringSetsIntersect =
-    delegate(
-        HashSet<string> a,
-        HashSet<string> b
-    )
-{
-    return
-        a.Overlaps(
-            b
-        );
 };
 
 
@@ -6406,80 +6347,7 @@ Func<HashSet<string>, HashSet<string>, string> GetParameterRelationship =
 
 
 // ============================================================================
-// RULE SET RELATIONSHIP
-//
-// NOTE:
-// This is intentionally conservative.
-//
-// Full logical equivalence is taken from the canonical tree Rule Signature.
-// Terminal-rule subset/intersection is used only as advisory overlap evidence.
-// ============================================================================
-
-Func<
-    string,
-    string,
-    HashSet<string>,
-    HashSet<string>,
-    string
-> GetRuleRelationship =
-
-    delegate(
-        string fullRuleSignatureA,
-        string fullRuleSignatureB,
-        HashSet<string> terminalRulesA,
-        HashSet<string> terminalRulesB
-    )
-{
-    if (
-        string.Equals(
-            fullRuleSignatureA,
-            fullRuleSignatureB,
-            StringComparison.Ordinal
-        )
-    )
-    {
-        return "Exact";
-    }
-
-
-    if (
-        terminalRulesA.Count > 0 &&
-        terminalRulesA.IsSubsetOf(
-            terminalRulesB
-        )
-    )
-    {
-        return "A subset of B";
-    }
-
-
-    if (
-        terminalRulesB.Count > 0 &&
-        terminalRulesB.IsSubsetOf(
-            terminalRulesA
-        )
-    )
-    {
-        return "B subset of A";
-    }
-
-
-    if (
-        terminalRulesA.Overlaps(
-            terminalRulesB
-        )
-    )
-    {
-        return "Intersects";
-    }
-
-
-    return "Related but not comparable";
-};
-
-
-// ============================================================================
-// PARSE NUMERIC VALUE
+// SAFE NUMERIC PARSER
 // ============================================================================
 
 Func<object, double?> TryGetNumericValue =
@@ -6514,57 +6382,823 @@ Func<object, double?> TryGetNumericValue =
 
 
 // ============================================================================
-// SIMPLE SINGLE-PARAMETER LOGICAL RELATIONSHIP
+// TEXT COMPARISON
 //
-// Handles useful cases such as:
+// Revit string filtering is normally case-insensitive from the user's point
+// of view, so overlap compatibility uses OrdinalIgnoreCase.
 //
-//     Height >= 3000
-//     Height >= 4000
+// Canonical signatures remain untouched.
+// ============================================================================
+
+StringComparison overlapStringComparison =
+    StringComparison.OrdinalIgnoreCase;
+
+
+// ============================================================================
+// DOES A TEXT VALUE SATISFY A CONDITION?
 //
-// producing:
+// Used when one side has an Equals condition.
+// ============================================================================
+
+Func<string, string, string, bool?> DoesTextValueSatisfy =
+    delegate(
+        string actualValue,
+        string op,
+        string conditionValue
+    )
+{
+    actualValue =
+        actualValue ?? "";
+
+    conditionValue =
+        conditionValue ?? "";
+
+
+    switch (op)
+    {
+        case "Equals":
+
+            return string.Equals(
+                actualValue,
+                conditionValue,
+                overlapStringComparison
+            );
+
+
+        case "NotEquals":
+
+            return !string.Equals(
+                actualValue,
+                conditionValue,
+                overlapStringComparison
+            );
+
+
+        case "Contains":
+
+            return actualValue.IndexOf(
+                conditionValue,
+                overlapStringComparison
+            ) >= 0;
+
+
+        case "DoesNotContain":
+
+            return actualValue.IndexOf(
+                conditionValue,
+                overlapStringComparison
+            ) < 0;
+
+
+        case "BeginsWith":
+
+            return actualValue.StartsWith(
+                conditionValue,
+                overlapStringComparison
+            );
+
+
+        case "DoesNotBeginWith":
+
+            return !actualValue.StartsWith(
+                conditionValue,
+                overlapStringComparison
+            );
+
+
+        case "EndsWith":
+
+            return actualValue.EndsWith(
+                conditionValue,
+                overlapStringComparison
+            );
+
+
+        case "DoesNotEndWith":
+
+            return !actualValue.EndsWith(
+                conditionValue,
+                overlapStringComparison
+            );
+    }
+
+
+    return null;
+};
+
+
+// ============================================================================
+// DOES A NUMERIC VALUE SATISFY A CONDITION?
+// ============================================================================
+
+Func<double, string, double, bool?> DoesNumericValueSatisfy =
+    delegate(
+        double actualValue,
+        string op,
+        double conditionValue
+    )
+{
+    switch (op)
+    {
+        case "Equals":
+
+            return Math.Abs(
+                actualValue -
+                conditionValue
+            ) < 1e-12;
+
+
+        case "NotEquals":
+
+            return Math.Abs(
+                actualValue -
+                conditionValue
+            ) >= 1e-12;
+
+
+        case "GreaterThan":
+
+            return actualValue >
+                   conditionValue;
+
+
+        case "GreaterThanOrEqual":
+
+            return actualValue >=
+                   conditionValue;
+
+
+        case "LessThan":
+
+            return actualValue <
+                   conditionValue;
+
+
+        case "LessThanOrEqual":
+
+            return actualValue <=
+                   conditionValue;
+    }
+
+
+    return null;
+};
+
+
+// ============================================================================
+// DETECT CONTRADICTION BETWEEN TWO TERMINAL RULES
 //
-//     B subset of A
+// IMPORTANT:
 //
-// This is intentionally limited to simple, directly comparable numeric
-// conditions. Complex Boolean trees remain advisory.
+// This function only reports TRUE where the conditions are safely known to
+// be incompatible.
 //
-// Returns:
+// It does NOT guess.
 //
-//     Exact
-//     A subset of B
-//     B subset of A
-//     Intersects
-//     Same parameters / different values
-//     Unable to determine
+// Examples:
+//
+//     RaisedFloor = 0
+//     RaisedFloor = 1
+//
+//         -> contradictory
+//
+//     Parameter has value
+//     Parameter has no value
+//
+//         -> contradictory
+//
+//     Height > 5000
+//     Height < 3000
+//
+//         -> contradictory
+//
+//     Type Name contains FAS_0
+//     Type Name contains FAS_1
+//
+//         -> NOT automatically contradictory.
+//            A string could technically contain both.
 //
 // ============================================================================
 
 Func<
     Dictionary<string, object>,
     Dictionary<string, object>,
-    string
-> CompareSimpleRuleRows =
+    bool
+> AreTerminalRulesContradictory =
 
     delegate(
-        Dictionary<string, object> a,
-        Dictionary<string, object> b
+        Dictionary<string, object> rowA,
+        Dictionary<string, object> rowB
     )
 {
-    string sigA =
+    string signatureA =
         Convert.ToString(
-            a["Rule Signature"]
+            rowA["Rule Signature"]
         );
 
-    string sigB =
+    string signatureB =
         Convert.ToString(
-            b["Rule Signature"]
+            rowB["Rule Signature"]
+        );
+
+
+    string parameterA =
+        GetParameterKeyFromRuleSignature(
+            signatureA
+        );
+
+    string parameterB =
+        GetParameterKeyFromRuleSignature(
+            signatureB
         );
 
 
     if (
+        string.IsNullOrWhiteSpace(
+            parameterA
+        ) ||
+        string.IsNullOrWhiteSpace(
+            parameterB
+        ) ||
+        !string.Equals(
+            parameterA,
+            parameterB,
+            StringComparison.Ordinal
+        )
+    )
+    {
+        return false;
+    }
+
+
+    string opA =
+        Convert.ToString(
+            rowA["Operator"]
+        );
+
+    string opB =
+        Convert.ToString(
+            rowB["Operator"]
+        );
+
+
+    string valueA =
+        Convert.ToString(
+            rowA["Raw Value"]
+        );
+
+    string valueB =
+        Convert.ToString(
+            rowB["Raw Value"]
+        );
+
+
+    // ========================================================================
+    // HAS VALUE / HAS NO VALUE
+    // ========================================================================
+
+    if (
+        (
+            opA == "HasValue" &&
+            opB == "HasNoValue"
+        )
+        ||
+        (
+            opA == "HasNoValue" &&
+            opB == "HasValue"
+        )
+    )
+    {
+        return true;
+    }
+
+
+    // ========================================================================
+    // EXACT EQUALITY / INEQUALITY
+    // ========================================================================
+
+    if (
+        opA == "Equals" &&
+        opB == "Equals"
+    )
+    {
+        return !string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        );
+    }
+
+
+    if (
+        opA == "Equals" &&
+        opB == "NotEquals"
+    )
+    {
+        return string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        );
+    }
+
+
+    if (
+        opB == "Equals" &&
+        opA == "NotEquals"
+    )
+    {
+        return string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        );
+    }
+
+
+    // ========================================================================
+    // STRING CONTRADICTIONS
+    //
+    // Contains X vs DoesNotContain X, etc.
+    // ========================================================================
+
+    if (
+        opA == "Contains" &&
+        opB == "DoesNotContain" &&
         string.Equals(
-            sigA,
-            sigB,
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    if (
+        opB == "Contains" &&
+        opA == "DoesNotContain" &&
+        string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    if (
+        opA == "BeginsWith" &&
+        opB == "DoesNotBeginWith" &&
+        string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    if (
+        opB == "BeginsWith" &&
+        opA == "DoesNotBeginWith" &&
+        string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    if (
+        opA == "EndsWith" &&
+        opB == "DoesNotEndWith" &&
+        string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    if (
+        opB == "EndsWith" &&
+        opA == "DoesNotEndWith" &&
+        string.Equals(
+            valueA,
+            valueB,
+            overlapStringComparison
+        )
+    )
+    {
+        return true;
+    }
+
+
+    // ========================================================================
+    // ONE SIDE EQUALS A STRING
+    //
+    // If the actual exact value cannot satisfy the other condition, the
+    // complete pair is contradictory.
+    // ========================================================================
+
+    if (
+        opA == "Equals"
+    )
+    {
+        bool? satisfiesB =
+            DoesTextValueSatisfy(
+                valueA,
+                opB,
+                valueB
+            );
+
+
+        if (
+            satisfiesB.HasValue &&
+            !satisfiesB.Value
+        )
+        {
+            return true;
+        }
+    }
+
+
+    if (
+        opB == "Equals"
+    )
+    {
+        bool? satisfiesA =
+            DoesTextValueSatisfy(
+                valueB,
+                opA,
+                valueA
+            );
+
+
+        if (
+            satisfiesA.HasValue &&
+            !satisfiesA.Value
+        )
+        {
+            return true;
+        }
+    }
+
+
+    // ========================================================================
+    // NUMERIC CONTRADICTIONS
+    // ========================================================================
+
+    double? numericA =
+        TryGetNumericValue(
+            valueA
+        );
+
+    double? numericB =
+        TryGetNumericValue(
+            valueB
+        );
+
+
+    if (
+        numericA.HasValue &&
+        numericB.HasValue
+    )
+    {
+        double a =
+            numericA.Value;
+
+        double b =
+            numericB.Value;
+
+
+        // --------------------------------------------------------------------
+        // Exact value against numeric condition
+        // --------------------------------------------------------------------
+
+        if (
+            opA == "Equals"
+        )
+        {
+            bool? satisfiesB =
+                DoesNumericValueSatisfy(
+                    a,
+                    opB,
+                    b
+                );
+
+
+            if (
+                satisfiesB.HasValue &&
+                !satisfiesB.Value
+            )
+            {
+                return true;
+            }
+        }
+
+
+        if (
+            opB == "Equals"
+        )
+        {
+            bool? satisfiesA =
+                DoesNumericValueSatisfy(
+                    b,
+                    opA,
+                    a
+                );
+
+
+            if (
+                satisfiesA.HasValue &&
+                !satisfiesA.Value
+            )
+            {
+                return true;
+            }
+        }
+
+
+        // --------------------------------------------------------------------
+        // LOWER BOUND vs UPPER BOUND
+        // --------------------------------------------------------------------
+
+        bool aLower =
+            opA == "GreaterThan" ||
+            opA == "GreaterThanOrEqual";
+
+        bool bLower =
+            opB == "GreaterThan" ||
+            opB == "GreaterThanOrEqual";
+
+
+        bool aUpper =
+            opA == "LessThan" ||
+            opA == "LessThanOrEqual";
+
+        bool bUpper =
+            opB == "LessThan" ||
+            opB == "LessThanOrEqual";
+
+
+        if (
+            aLower &&
+            bUpper
+        )
+        {
+            if (a > b)
+                return true;
+
+
+            if (
+                Math.Abs(a - b) < 1e-12 &&
+                (
+                    opA == "GreaterThan" ||
+                    opB == "LessThan"
+                )
+            )
+            {
+                return true;
+            }
+        }
+
+
+        if (
+            bLower &&
+            aUpper
+        )
+        {
+            if (b > a)
+                return true;
+
+
+            if (
+                Math.Abs(a - b) < 1e-12 &&
+                (
+                    opB == "GreaterThan" ||
+                    opA == "LessThan"
+                )
+            )
+            {
+                return true;
+            }
+        }
+    }
+
+
+    return false;
+};
+
+
+// ============================================================================
+// FILTER IS SAFE FOR COMPLETE AND-CONDITION COMPARISON
+//
+// OR trees are excluded from V2 logical compatibility analysis.
+// They remain available for exact canonical definition comparison.
+//
+// Category rules inside the rule tree are also excluded from logical overlap
+// inference because they need separate Boolean treatment.
+//
+// ============================================================================
+
+Func<
+    Dictionary<string, object>,
+    List<Dictionary<string, object>>,
+    bool
+> IsSafeAndComparable =
+
+    delegate(
+        Dictionary<string, object> filterRecord,
+        List<Dictionary<string, object>> rows
+    )
+{
+    if (
+        Convert.ToString(
+            filterRecord["Rule Analysis Status"]
+        ) !=
+        "Fully Analysed"
+    )
+    {
+        return false;
+    }
+
+
+    string fullSignature =
+        Convert.ToString(
+            filterRecord["_RuleSignature"]
+        );
+
+
+    if (
+        fullSignature.IndexOf(
+            "OR(",
+            StringComparison.Ordinal
+        ) >= 0
+    )
+    {
+        return false;
+    }
+
+
+    foreach (
+        Dictionary<string, object> row
+        in rows
+    )
+    {
+        string ruleType =
+            Convert.ToString(
+                row["Rule Type"]
+            );
+
+
+        string innerType =
+            Convert.ToString(
+                row["Inner Rule Type"]
+            );
+
+
+        if (
+            ruleType ==
+            "FilterCategoryRule"
+            ||
+            innerType ==
+            "FilterCategoryRule"
+        )
+        {
+            return false;
+        }
+    }
+
+
+    return true;
+};
+
+
+// ============================================================================
+// COMPLETE FILTER CONTRADICTION TEST
+//
+// For two AND-based filters:
+//
+// If ANY condition in A contradicts ANY condition in B on the same parameter,
+// then no element can satisfy both complete filters.
+//
+// ============================================================================
+
+Func<
+    List<Dictionary<string, object>>,
+    List<Dictionary<string, object>>,
+    bool
+> AreFiltersMutuallyExclusive =
+
+    delegate(
+        List<Dictionary<string, object>> rowsA,
+        List<Dictionary<string, object>> rowsB
+    )
+{
+    foreach (
+        Dictionary<string, object> rowA
+        in rowsA
+    )
+    {
+        foreach (
+            Dictionary<string, object> rowB
+            in rowsB
+        )
+        {
+            if (
+                AreTerminalRulesContradictory(
+                    rowA,
+                    rowB
+                )
+            )
+            {
+                return true;
+            }
+        }
+    }
+
+
+    return false;
+};
+
+
+// ============================================================================
+// COUNT IDENTICAL TERMINAL CONDITIONS
+// ============================================================================
+
+Func<
+    HashSet<string>,
+    HashSet<string>,
+    int
+> CountSharedTerminalRules =
+
+    delegate(
+        HashSet<string> a,
+        HashSet<string> b
+    )
+{
+    int count =
+        0;
+
+
+    foreach (
+        string rule
+        in a
+    )
+    {
+        if (
+            b.Contains(
+                rule
+            )
+        )
+        {
+            count++;
+        }
+    }
+
+
+    return count;
+};
+
+
+// ============================================================================
+// RULE RELATIONSHIP
+// ============================================================================
+
+Func<
+    string,
+    string,
+    HashSet<string>,
+    HashSet<string>,
+    bool,
+    string
+> GetRuleRelationshipV2 =
+
+    delegate(
+        string fullRuleSignatureA,
+        string fullRuleSignatureB,
+        HashSet<string> terminalRulesA,
+        HashSet<string> terminalRulesB,
+        bool mutuallyExclusive
+    )
+{
+    if (
+        string.Equals(
+            fullRuleSignatureA,
+            fullRuleSignatureB,
             StringComparison.Ordinal
         )
     )
@@ -6573,301 +7207,55 @@ Func<
     }
 
 
-    string paramA =
-        GetParameterKeyFromRuleSignature(
-            sigA
-        );
-
-    string paramB =
-        GetParameterKeyFromRuleSignature(
-            sigB
-        );
-
-
     if (
-        string.IsNullOrWhiteSpace(paramA) ||
-        !string.Equals(
-            paramA,
-            paramB,
-            StringComparison.Ordinal
-        )
+        mutuallyExclusive
     )
     {
-        return "Unable to determine";
-    }
-
-
-    string opA =
-        Convert.ToString(
-            a["Operator"]
-        );
-
-    string opB =
-        Convert.ToString(
-            b["Operator"]
-        );
-
-
-    object rawA =
-        a["Raw Value"];
-
-    object rawB =
-        b["Raw Value"];
-
-
-    double? numA =
-        TryGetNumericValue(
-            rawA
-        );
-
-    double? numB =
-        TryGetNumericValue(
-            rawB
-        );
-
-
-    // ------------------------------------------------------------------------
-    // NUMERIC COMPARISON
-    // ------------------------------------------------------------------------
-
-    if (
-        numA.HasValue &&
-        numB.HasValue
-    )
-    {
-        double va =
-            numA.Value;
-
-        double vb =
-            numB.Value;
-
-
-        // --------------------------------------------------------------------
-        // >= / >
-        // Higher threshold is a subset.
-        // --------------------------------------------------------------------
-
-        bool aLowerBound =
-            opA == "GreaterThan" ||
-            opA == "GreaterThanOrEqual";
-
-        bool bLowerBound =
-            opB == "GreaterThan" ||
-            opB == "GreaterThanOrEqual";
-
-
-        if (
-            aLowerBound &&
-            bLowerBound
-        )
-        {
-            if (va < vb)
-                return "B subset of A";
-
-            if (vb < va)
-                return "A subset of B";
-
-            return "Intersects";
-        }
-
-
-        // --------------------------------------------------------------------
-        // <= / <
-        // Lower threshold is a subset.
-        // --------------------------------------------------------------------
-
-        bool aUpperBound =
-            opA == "LessThan" ||
-            opA == "LessThanOrEqual";
-
-        bool bUpperBound =
-            opB == "LessThan" ||
-            opB == "LessThanOrEqual";
-
-
-        if (
-            aUpperBound &&
-            bUpperBound
-        )
-        {
-            if (va < vb)
-                return "A subset of B";
-
-            if (vb < va)
-                return "B subset of A";
-
-            return "Intersects";
-        }
-
-
-        // --------------------------------------------------------------------
-        // EQUALS
-        // --------------------------------------------------------------------
-
-        if (
-            opA == "Equals" &&
-            opB == "Equals"
-        )
-        {
-            return
-                Math.Abs(
-                    va - vb
-                ) < 1e-12
-                ? "Exact"
-                : "Same parameters / different values";
-        }
-
-
-        // --------------------------------------------------------------------
-        // Equals against lower bound
-        // --------------------------------------------------------------------
-
-        if (
-            opA == "Equals" &&
-            bLowerBound
-        )
-        {
-            if (va >= vb)
-                return "A subset of B";
-
-            return "Same parameters / different values";
-        }
-
-
-        if (
-            opB == "Equals" &&
-            aLowerBound
-        )
-        {
-            if (vb >= va)
-                return "B subset of A";
-
-            return "Same parameters / different values";
-        }
-
-
-        // --------------------------------------------------------------------
-        // Equals against upper bound
-        // --------------------------------------------------------------------
-
-        if (
-            opA == "Equals" &&
-            bUpperBound
-        )
-        {
-            if (va <= vb)
-                return "A subset of B";
-
-            return "Same parameters / different values";
-        }
-
-
-        if (
-            opB == "Equals" &&
-            aUpperBound
-        )
-        {
-            if (vb <= va)
-                return "B subset of A";
-
-            return "Same parameters / different values";
-        }
-
-
-        return "Intersects";
-    }
-
-
-    // ------------------------------------------------------------------------
-    // STRING / OTHER DIRECT COMPARISON
-    // ------------------------------------------------------------------------
-
-    string textA =
-        Convert.ToString(
-            rawA
-        );
-
-    string textB =
-        Convert.ToString(
-            rawB
-        );
-
-
-    if (
-        opA == "Equals" &&
-        opB == "Equals"
-    )
-    {
-        if (
-            string.Equals(
-                textA,
-                textB,
-                StringComparison.Ordinal
-            )
-        )
-        {
-            return "Exact";
-        }
-
-
-        return
-            "Same parameters / different values";
+        return "Mutually Exclusive";
     }
 
 
     if (
-        opA == "Contains" &&
-        opB == "Contains"
+        terminalRulesA.Count > 0 &&
+        terminalRulesA.IsProperSubsetOf(
+            terminalRulesB
+        )
     )
     {
-        if (
-            string.Equals(
-                textA,
-                textB,
-                StringComparison.Ordinal
-            )
-        )
-        {
-            return "Exact";
-        }
-
-
-        if (
-            !string.IsNullOrEmpty(textA) &&
-            !string.IsNullOrEmpty(textB)
-        )
-        {
-            if (
-                textB.IndexOf(
-                    textA,
-                    StringComparison.Ordinal
-                ) >= 0
-            )
-            {
-                return "B subset of A";
-            }
-
-
-            if (
-                textA.IndexOf(
-                    textB,
-                    StringComparison.Ordinal
-                ) >= 0
-            )
-            {
-                return "A subset of B";
-            }
-        }
+        return "A subset of B";
     }
 
 
-    return
-        "Same parameters / different values";
+    if (
+        terminalRulesB.Count > 0 &&
+        terminalRulesB.IsProperSubsetOf(
+            terminalRulesA
+        )
+    )
+    {
+        return "B subset of A";
+    }
+
+
+    int shared =
+        CountSharedTerminalRules(
+            terminalRulesA,
+            terminalRulesB
+        );
+
+
+    if (shared > 0)
+    {
+        return "Compatible / Shared Conditions";
+    }
+
+
+    return "Related but not comparable";
 };
 
 
 // ============================================================================
-// FRIENDLY REASON BUILDER
+// FRIENDLY REASON
 // ============================================================================
 
 Func<
@@ -6876,7 +7264,7 @@ Func<
     string,
     string,
     string
-> BuildOverlapReason =
+> BuildOverlapReasonV2 =
 
     delegate(
         string classification,
@@ -6897,9 +7285,8 @@ Func<
         case "Same Rules / Different Categories":
 
             return
-                "The complete rule definition is the same, but the " +
-                "filters are applied to different category sets. " +
-                "Category relationship: " +
+                "The complete rule definition is identical, but the " +
+                "category sets differ. Category relationship: " +
                 categoryRelationship +
                 ".";
 
@@ -6907,19 +7294,16 @@ Func<
         case "Category Subset":
 
             return
-                "The filters use closely related categories and one " +
-                "category set is contained within the other. Rule " +
-                "relationship: " +
-                ruleRelationship +
-                ".";
+                "The complete rule definition is identical and one " +
+                "category set is a subset of the other.";
 
 
         case "Potential Logical Overlap":
 
             return
-                "The filters operate on common categories and/or " +
-                "parameters and their conditions may select overlapping " +
-                "elements. Rule relationship: " +
+                "The filters apply to intersecting categories, use " +
+                "compatible conditions, and no contradictory AND condition " +
+                "was detected. Rule relationship: " +
                 ruleRelationship +
                 ".";
 
@@ -6927,11 +7311,9 @@ Func<
         case "Related":
 
             return
-                "The filters share relevant categories or parameters but " +
-                "the extracted conditions do not justify a stronger " +
-                "overlap classification. Parameter relationship: " +
-                parameterRelationship +
-                ".";
+                "The filters share significant categories or parameters, " +
+                "but the available rule structure does not justify a " +
+                "stronger logical-overlap classification.";
 
 
         default:
@@ -6942,9 +7324,23 @@ Func<
 
 
 // ============================================================================
-// COMPARE EVERY FILTER PAIR ONCE
+// INTERNAL DIAGNOSTIC COUNTERS
 //
-// i < j prevents reverse duplicate rows.
+// Not currently exported to Excel, but useful during validation.
+// ============================================================================
+
+int suppressedMutuallyExclusivePairCount =
+    0;
+
+int suppressedOfficeOfficePairCount =
+    0;
+
+int evaluatedCandidatePairCount =
+    0;
+
+
+// ============================================================================
+// COMPARE EACH FILTER PAIR ONCE
 // ============================================================================
 
 for (
@@ -6970,19 +7366,19 @@ for (
         );
 
 
-    string filterAOfficeClassification =
+    string classificationA =
         Convert.ToString(
             a["Office Classification"]
         );
 
 
-    string filterARuleSignature =
+    string fullRuleSignatureA =
         Convert.ToString(
             a["_RuleSignature"]
         );
 
 
-    string filterARuleExpression =
+    string expressionA =
         Convert.ToString(
             a["Rule Expression"]
         );
@@ -7003,6 +7399,19 @@ for (
     HashSet<string> terminalRulesA =
         GetTerminalRuleSignatureSet(
             filterAId
+        );
+
+
+    List<Dictionary<string, object>> rowsA =
+        GetFilterRuleRows(
+            filterAId
+        );
+
+
+    bool safeA =
+        IsSafeAndComparable(
+            a,
+            rowsA
         );
 
 
@@ -7029,19 +7438,19 @@ for (
             );
 
 
-        string filterBOfficeClassification =
+        string classificationB =
             Convert.ToString(
                 b["Office Classification"]
             );
 
 
-        string filterBRuleSignature =
+        string fullRuleSignatureB =
             Convert.ToString(
                 b["_RuleSignature"]
             );
 
 
-        string filterBRuleExpression =
+        string expressionB =
             Convert.ToString(
                 b["Rule Expression"]
             );
@@ -7065,77 +7474,17 @@ for (
             );
 
 
-        // ====================================================================
-        // PRESELECTION
-        //
-        // Avoid meaningless all-pairs output.
-        //
-        // Compare only if:
-        //
-        //     categories intersect
-        // OR
-        //     rule parameters intersect
-        // OR
-        //     one references the other's office filter identity
-        //
-        // ====================================================================
-
-        bool categoryIntersection =
-            categoriesA.Overlaps(
-                categoriesB
+        List<Dictionary<string, object>> rowsB =
+            GetFilterRuleRows(
+                filterBId
             );
 
 
-        bool parameterIntersection =
-            parametersA.Overlaps(
-                parametersB
+        bool safeB =
+            IsSafeAndComparable(
+                b,
+                rowsB
             );
-
-
-        string officeReferenceA =
-            Convert.ToString(
-                a["Office Filter Name"]
-            );
-
-
-        string officeReferenceB =
-            Convert.ToString(
-                b["Office Filter Name"]
-            );
-
-
-        bool officeReferenceRelationship =
-            (
-                !string.IsNullOrWhiteSpace(
-                    officeReferenceA
-                ) &&
-                string.Equals(
-                    officeReferenceA,
-                    filterBName,
-                    StringComparison.Ordinal
-                )
-            )
-            ||
-            (
-                !string.IsNullOrWhiteSpace(
-                    officeReferenceB
-                ) &&
-                string.Equals(
-                    officeReferenceB,
-                    filterAName,
-                    StringComparison.Ordinal
-                )
-            );
-
-
-        if (
-            !categoryIntersection &&
-            !parameterIntersection &&
-            !officeReferenceRelationship
-        )
-        {
-            continue;
-        }
 
 
         // ====================================================================
@@ -7148,16 +7497,28 @@ for (
             );
 
 
+        bool categoryIntersection =
+            categoriesA.Overlaps(
+                categoriesB
+            );
+
+
         bool sameParameters =
             parametersA.SetEquals(
                 parametersB
             );
 
 
+        bool parameterIntersection =
+            parametersA.Overlaps(
+                parametersB
+            );
+
+
         bool sameFullRules =
             string.Equals(
-                filterARuleSignature,
-                filterBRuleSignature,
+                fullRuleSignatureA,
+                fullRuleSignatureB,
                 StringComparison.Ordinal
             );
 
@@ -7176,346 +7537,565 @@ for (
             );
 
 
-        string ruleRelationship =
-            GetRuleRelationship(
-                filterARuleSignature,
-                filterBRuleSignature,
-                terminalRulesA,
-                terminalRulesB
+        // ====================================================================
+        // OFFICE REFERENCE RELATIONSHIP
+        // ====================================================================
+
+        string officeReferenceA =
+            Convert.ToString(
+                a["Office Filter Name"]
+            );
+
+
+        string officeReferenceB =
+            Convert.ToString(
+                b["Office Filter Name"]
+            );
+
+
+        bool officeReferenceRelationship =
+            (
+                !string.IsNullOrWhiteSpace(
+                    officeReferenceA
+                )
+                &&
+                string.Equals(
+                    officeReferenceA,
+                    filterBName,
+                    StringComparison.Ordinal
+                )
+            )
+            ||
+            (
+                !string.IsNullOrWhiteSpace(
+                    officeReferenceB
+                )
+                &&
+                string.Equals(
+                    officeReferenceB,
+                    filterAName,
+                    StringComparison.Ordinal
+                )
             );
 
 
         // ====================================================================
-        // IMPROVE RULE RELATIONSHIP FOR SIMPLE ONE-RULE FILTERS
+        // PRESELECTION
         // ====================================================================
 
-        List<Dictionary<string, object>> rowsA =
-            GetFilterRuleRows(
-                filterAId
-            );
-
-
-        List<Dictionary<string, object>> rowsB =
-            GetFilterRuleRows(
-                filterBId
-            );
-
-
         if (
-            rowsA.Count == 1 &&
-            rowsB.Count == 1 &&
-            parameterIntersection
-        )
-        {
-            string simpleRelationship =
-                CompareSimpleRuleRows(
-                    rowsA[0],
-                    rowsB[0]
-                );
-
-
-            if (
-                simpleRelationship !=
-                "Unable to determine"
-            )
-            {
-                ruleRelationship =
-                    simpleRelationship;
-            }
-        }
-
-
-        // ====================================================================
-        // CLASSIFICATION
-        // ====================================================================
-
-        string overlapClassification =
-            "";
-
-        string severity =
-            "";
-
-        string confidence =
-            "";
-
-
-        // --------------------------------------------------------------------
-        // EXACT DUPLICATE
-        //
-        // Name is deliberately ignored here.
-        // Same categories + same complete rules = duplicate behaviour.
-        // --------------------------------------------------------------------
-
-        if (
-            sameCategories &&
-            sameFullRules
-        )
-        {
-            overlapClassification =
-                "Exact Duplicate";
-
-            severity =
-                "High";
-
-            confidence =
-                "High";
-        }
-
-
-        // --------------------------------------------------------------------
-        // SAME RULES / DIFFERENT CATEGORIES
-        // --------------------------------------------------------------------
-
-        else if (
-            sameFullRules &&
-            !sameCategories
-        )
-        {
-            overlapClassification =
-                "Same Rules / Different Categories";
-
-            severity =
-                "Low";
-
-            confidence =
-                "High";
-        }
-
-
-        // --------------------------------------------------------------------
-        // CATEGORY SUBSET
-        // --------------------------------------------------------------------
-
-        else if (
-            (
-                categoryRelationship ==
-                "A subset of B"
-                ||
-                categoryRelationship ==
-                "B subset of A"
-            )
-            &&
-            (
-                sameParameters ||
-                parameterIntersection
-            )
-        )
-        {
-            overlapClassification =
-                "Category Subset";
-
-            severity =
-                "Low";
-
-
-            confidence =
-                (
-                    ruleRelationship ==
-                    "Exact"
-                )
-                ? "High"
-                : "Medium";
-        }
-
-
-        // --------------------------------------------------------------------
-        // POTENTIAL LOGICAL OVERLAP
-        // --------------------------------------------------------------------
-
-        else if (
-            categoryIntersection &&
-            parameterIntersection &&
-            (
-                ruleRelationship ==
-                "A subset of B"
-                ||
-                ruleRelationship ==
-                "B subset of A"
-                ||
-                ruleRelationship ==
-                "Intersects"
-            )
-        )
-        {
-            overlapClassification =
-                "Potential Logical Overlap";
-
-            severity =
-                "Medium";
-
-
-            confidence =
-                (
-                    rowsA.Count == 1 &&
-                    rowsB.Count == 1
-                )
-                ? "High"
-                : "Medium";
-        }
-
-
-        // --------------------------------------------------------------------
-        // RELATED
-        // --------------------------------------------------------------------
-
-        else if (
-            categoryIntersection ||
-            parameterIntersection ||
-            officeReferenceRelationship
-        )
-        {
-            overlapClassification =
-                "Related";
-
-            severity =
-                "Info";
-
-
-            confidence =
-                (
-                    Convert.ToString(
-                        a["Rule Analysis Status"]
-                    ) ==
-                    "Fully Analysed"
-                    &&
-                    Convert.ToString(
-                        b["Rule Analysis Status"]
-                    ) ==
-                    "Fully Analysed"
-                )
-                ? "Medium"
-                : "Limited";
-        }
-
-
-        // No meaningful relationship -> no row.
-        if (
-            string.IsNullOrWhiteSpace(
-                overlapClassification
-            )
+            !sameFullRules &&
+            !categoryIntersection &&
+            !parameterIntersection &&
+            !officeReferenceRelationship
         )
         {
             continue;
         }
 
 
+        evaluatedCandidatePairCount++;
+
+
         // ====================================================================
-        // LOWER CONFIDENCE FOR PARTIAL RULE ANALYSIS
+        // EXACT DUPLICATE
+        //
+        // Always retain this, even Office <-> Office.
         // ====================================================================
-
-        bool fullyAnalysedA =
-            Convert.ToString(
-                a["Rule Analysis Status"]
-            ) ==
-            "Fully Analysed";
-
-
-        bool fullyAnalysedB =
-            Convert.ToString(
-                b["Rule Analysis Status"]
-            ) ==
-            "Fully Analysed";
-
 
         if (
-            !fullyAnalysedA ||
-            !fullyAnalysedB
+            sameCategories &&
+            sameFullRules
         )
         {
-            confidence =
-                "Limited";
+            Dictionary<string, object> exactRecord =
+                new Dictionary<string, object>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+
+            exactRecord["Project ID"] =
+                projectId;
+
+            exactRecord["Filter A ID"] =
+                filterAId;
+
+            exactRecord["Filter A Name"] =
+                filterAName;
+
+            exactRecord["Filter A Office Classification"] =
+                classificationA;
+
+            exactRecord["Filter B ID"] =
+                filterBId;
+
+            exactRecord["Filter B Name"] =
+                filterBName;
+
+            exactRecord["Filter B Office Classification"] =
+                classificationB;
+
+            exactRecord["Overlap Classification"] =
+                "Exact Duplicate";
+
+            exactRecord["Severity"] =
+                "High";
+
+            exactRecord["Confidence"] =
+                "High";
+
+            exactRecord["Same Categories"] =
+                true;
+
+            exactRecord["Category Relationship"] =
+                "Exact";
+
+            exactRecord["Same Parameters"] =
+                sameParameters;
+
+            exactRecord["Parameter Relationship"] =
+                parameterRelationship;
+
+            exactRecord["Rule Relationship"] =
+                "Exact";
+
+            exactRecord["Filter A Rule Expression"] =
+                expressionA;
+
+            exactRecord["Filter B Rule Expression"] =
+                expressionB;
+
+            exactRecord["Reason"] =
+                "Both filters use the same categories and the same " +
+                "complete canonical rule definition.";
+
+
+            overlapRecords.Add(
+                exactRecord
+            );
+
+
+            continue;
         }
 
 
         // ====================================================================
-        // CREATE OVERLAP ROW
+        // APPROVED OFFICE BASELINE SUPPRESSION
+        //
+        // Two approved office filters may intentionally operate on the same
+        // categories and parameters.
+        //
+        // Unless they are exact duplicates, these are not PM-facing findings.
         // ====================================================================
 
-        Dictionary<string, object> overlapRecord =
-            new Dictionary<string, object>(
-                StringComparer.OrdinalIgnoreCase
+        if (
+            classificationA == "Office" &&
+            classificationB == "Office"
+        )
+        {
+            suppressedOfficeOfficePairCount++;
+
+            continue;
+        }
+
+
+        // ====================================================================
+        // IDENTICAL RULES / CATEGORY RELATIONSHIP
+        // ====================================================================
+
+        if (
+            sameFullRules &&
+            !sameCategories
+        )
+        {
+            string overlapClassification;
+
+
+            if (
+                categoryRelationship ==
+                "A subset of B"
+                ||
+                categoryRelationship ==
+                "B subset of A"
+            )
+            {
+                overlapClassification =
+                    "Category Subset";
+            }
+            else
+            {
+                overlapClassification =
+                    "Same Rules / Different Categories";
+            }
+
+
+            Dictionary<string, object> sameRulesRecord =
+                new Dictionary<string, object>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+
+            sameRulesRecord["Project ID"] =
+                projectId;
+
+            sameRulesRecord["Filter A ID"] =
+                filterAId;
+
+            sameRulesRecord["Filter A Name"] =
+                filterAName;
+
+            sameRulesRecord["Filter A Office Classification"] =
+                classificationA;
+
+            sameRulesRecord["Filter B ID"] =
+                filterBId;
+
+            sameRulesRecord["Filter B Name"] =
+                filterBName;
+
+            sameRulesRecord["Filter B Office Classification"] =
+                classificationB;
+
+            sameRulesRecord["Overlap Classification"] =
+                overlapClassification;
+
+            sameRulesRecord["Severity"] =
+                "Low";
+
+            sameRulesRecord["Confidence"] =
+                "High";
+
+            sameRulesRecord["Same Categories"] =
+                sameCategories;
+
+            sameRulesRecord["Category Relationship"] =
+                categoryRelationship;
+
+            sameRulesRecord["Same Parameters"] =
+                sameParameters;
+
+            sameRulesRecord["Parameter Relationship"] =
+                parameterRelationship;
+
+            sameRulesRecord["Rule Relationship"] =
+                "Exact";
+
+            sameRulesRecord["Filter A Rule Expression"] =
+                expressionA;
+
+            sameRulesRecord["Filter B Rule Expression"] =
+                expressionB;
+
+            sameRulesRecord["Reason"] =
+                BuildOverlapReasonV2(
+                    overlapClassification,
+                    categoryRelationship,
+                    parameterRelationship,
+                    "Exact"
+                );
+
+
+            overlapRecords.Add(
+                sameRulesRecord
             );
 
 
-        overlapRecord["Project ID"] =
-            projectId;
+            continue;
+        }
 
 
-        overlapRecord["Filter A ID"] =
-            filterAId;
+        // ====================================================================
+        // COMPLETE AND-CONDITION CONTRADICTION TEST
+        // ====================================================================
 
-        overlapRecord["Filter A Name"] =
-            filterAName;
-
-        overlapRecord["Filter A Office Classification"] =
-            filterAOfficeClassification;
+        bool mutuallyExclusive =
+            false;
 
 
-        overlapRecord["Filter B ID"] =
-            filterBId;
-
-        overlapRecord["Filter B Name"] =
-            filterBName;
-
-        overlapRecord["Filter B Office Classification"] =
-            filterBOfficeClassification;
-
-
-        overlapRecord["Overlap Classification"] =
-            overlapClassification;
-
-        overlapRecord["Severity"] =
-            severity;
-
-        overlapRecord["Confidence"] =
-            confidence;
+        if (
+            safeA &&
+            safeB &&
+            categoryIntersection &&
+            parameterIntersection
+        )
+        {
+            mutuallyExclusive =
+                AreFiltersMutuallyExclusive(
+                    rowsA,
+                    rowsB
+                );
+        }
 
 
-        overlapRecord["Same Categories"] =
-            sameCategories;
+        if (
+            mutuallyExclusive
+        )
+        {
+            suppressedMutuallyExclusivePairCount++;
 
-        overlapRecord["Category Relationship"] =
-            categoryRelationship;
-
-
-        overlapRecord["Same Parameters"] =
-            sameParameters;
-
-        overlapRecord["Parameter Relationship"] =
-            parameterRelationship;
+            continue;
+        }
 
 
-        overlapRecord["Rule Relationship"] =
-            ruleRelationship;
+        // ====================================================================
+        // RULE RELATIONSHIP
+        // ====================================================================
 
-
-        overlapRecord["Filter A Rule Expression"] =
-            filterARuleExpression;
-
-        overlapRecord["Filter B Rule Expression"] =
-            filterBRuleExpression;
-
-
-        overlapRecord["Reason"] =
-            BuildOverlapReason(
-                overlapClassification,
-                categoryRelationship,
-                parameterRelationship,
-                ruleRelationship
+        string ruleRelationship =
+            GetRuleRelationshipV2(
+                fullRuleSignatureA,
+                fullRuleSignatureB,
+                terminalRulesA,
+                terminalRulesB,
+                mutuallyExclusive
             );
 
 
-        overlapRecords.Add(
-            overlapRecord
-        );
+        int sharedTerminalRuleCount =
+            CountSharedTerminalRules(
+                terminalRulesA,
+                terminalRulesB
+            );
+
+
+        int maxTerminalRuleCount =
+            Math.Max(
+                terminalRulesA.Count,
+                terminalRulesB.Count
+            );
+
+
+        double sharedRuleRatio =
+            maxTerminalRuleCount > 0
+            ? (double)sharedTerminalRuleCount /
+              (double)maxTerminalRuleCount
+            : 0.0;
+
+
+        // ====================================================================
+        // POTENTIAL LOGICAL OVERLAP
+        //
+        // Requirements:
+        //
+        //     - categories actually intersect
+        //     - parameters intersect
+        //     - both filters have safely comparable AND structures
+        //     - no contradiction exists
+        //     - AND there is substantial rule/parameter similarity
+        //
+        // This is intentionally stricter than V1.
+        // ====================================================================
+
+        bool substantialSimilarity =
+            sameParameters
+            ||
+            terminalRulesA.IsProperSubsetOf(
+                terminalRulesB
+            )
+            ||
+            terminalRulesB.IsProperSubsetOf(
+                terminalRulesA
+            )
+            ||
+            sharedTerminalRuleCount >= 2
+            ||
+            sharedRuleRatio >= 0.50;
+
+
+        if (
+            categoryIntersection &&
+            parameterIntersection &&
+            safeA &&
+            safeB &&
+            substantialSimilarity
+        )
+        {
+            Dictionary<string, object> overlapRecord =
+                new Dictionary<string, object>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+
+            overlapRecord["Project ID"] =
+                projectId;
+
+            overlapRecord["Filter A ID"] =
+                filterAId;
+
+            overlapRecord["Filter A Name"] =
+                filterAName;
+
+            overlapRecord["Filter A Office Classification"] =
+                classificationA;
+
+            overlapRecord["Filter B ID"] =
+                filterBId;
+
+            overlapRecord["Filter B Name"] =
+                filterBName;
+
+            overlapRecord["Filter B Office Classification"] =
+                classificationB;
+
+            overlapRecord["Overlap Classification"] =
+                "Potential Logical Overlap";
+
+            overlapRecord["Severity"] =
+                "Medium";
+
+            overlapRecord["Confidence"] =
+                "Medium";
+
+            overlapRecord["Same Categories"] =
+                sameCategories;
+
+            overlapRecord["Category Relationship"] =
+                categoryRelationship;
+
+            overlapRecord["Same Parameters"] =
+                sameParameters;
+
+            overlapRecord["Parameter Relationship"] =
+                parameterRelationship;
+
+            overlapRecord["Rule Relationship"] =
+                ruleRelationship;
+
+            overlapRecord["Filter A Rule Expression"] =
+                expressionA;
+
+            overlapRecord["Filter B Rule Expression"] =
+                expressionB;
+
+            overlapRecord["Reason"] =
+                BuildOverlapReasonV2(
+                    "Potential Logical Overlap",
+                    categoryRelationship,
+                    parameterRelationship,
+                    ruleRelationship
+                );
+
+
+            overlapRecords.Add(
+                overlapRecord
+            );
+
+
+            continue;
+        }
+
+
+        // ====================================================================
+        // STRICT RELATED
+        //
+        // Do not report a pair merely because one category or parameter is
+        // shared.
+        //
+        // Related now requires one of:
+        //
+        //     - an explicit office-reference relationship
+        //     - exact parameter sets + intersecting categories
+        //     - at least two identical terminal conditions
+        //
+        // ====================================================================
+
+        bool strongRelatedEvidence =
+            officeReferenceRelationship
+            ||
+            (
+                categoryIntersection &&
+                sameParameters &&
+                parametersA.Count > 0
+            )
+            ||
+            sharedTerminalRuleCount >= 2;
+
+
+        if (
+            strongRelatedEvidence
+        )
+        {
+            Dictionary<string, object> relatedRecord =
+                new Dictionary<string, object>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+
+            relatedRecord["Project ID"] =
+                projectId;
+
+            relatedRecord["Filter A ID"] =
+                filterAId;
+
+            relatedRecord["Filter A Name"] =
+                filterAName;
+
+            relatedRecord["Filter A Office Classification"] =
+                classificationA;
+
+            relatedRecord["Filter B ID"] =
+                filterBId;
+
+            relatedRecord["Filter B Name"] =
+                filterBName;
+
+            relatedRecord["Filter B Office Classification"] =
+                classificationB;
+
+            relatedRecord["Overlap Classification"] =
+                "Related";
+
+            relatedRecord["Severity"] =
+                "Info";
+
+            relatedRecord["Confidence"] =
+                (
+                    safeA &&
+                    safeB
+                )
+                ? "Medium"
+                : "Limited";
+
+            relatedRecord["Same Categories"] =
+                sameCategories;
+
+            relatedRecord["Category Relationship"] =
+                categoryRelationship;
+
+            relatedRecord["Same Parameters"] =
+                sameParameters;
+
+            relatedRecord["Parameter Relationship"] =
+                parameterRelationship;
+
+            relatedRecord["Rule Relationship"] =
+                ruleRelationship;
+
+            relatedRecord["Filter A Rule Expression"] =
+                expressionA;
+
+            relatedRecord["Filter B Rule Expression"] =
+                expressionB;
+
+            relatedRecord["Reason"] =
+                BuildOverlapReasonV2(
+                    "Related",
+                    categoryRelationship,
+                    parameterRelationship,
+                    ruleRelationship
+                );
+
+
+            overlapRecords.Add(
+                relatedRecord
+            );
+        }
     }
 }
 
 
 // ============================================================================
-// SORT OVERLAP OUTPUT
-//
-// Highest-priority findings first.
+// SORT OVERLAPS
 // ============================================================================
 
 Func<string, int> GetSeveritySortOrder =
@@ -7576,7 +8156,9 @@ overlapRecords =
 
 
 // ============================================================================
-// OVERLAP SUMMARY COUNTS
+// SUMMARY COUNTS
+//
+// Names remain identical to Block 9 V1 so Block 10 does not need changing.
 // ============================================================================
 
 int exactDuplicateCount =
@@ -7650,39 +8232,15 @@ int mediumSeverityOverlapCount =
 
 
 // ============================================================================
-// BLOCK 9 COMPLETE
+// BLOCK 9 V2 COMPLETE
 //
-// Available:
+// Internal validation counters:
 //
-//     overlapRecords
+//     suppressedMutuallyExclusivePairCount
+//     suppressedOfficeOfficePairCount
+//     evaluatedCandidatePairCount
 //
-// Columns:
-//
-//     Project ID
-//     Filter A ID
-//     Filter A Name
-//     Filter A Office Classification
-//     Filter B ID
-//     Filter B Name
-//     Filter B Office Classification
-//     Overlap Classification
-//     Severity
-//     Confidence
-//     Same Categories
-//     Category Relationship
-//     Same Parameters
-//     Parameter Relationship
-//     Rule Relationship
-//     Filter A Rule Expression
-//     Filter B Rule Expression
-//     Reason
-//
-// Pair comparison is one-directional only:
-//     A/B is recorded once.
-//     B/A is not duplicated.
-//
-// No row is produced for:
-//     No Significant Overlap
+// These are intentionally not yet exported to the workbook.
 //
 // ============================================================================
 
