@@ -200,313 +200,564 @@ string auditOutputPath =
         ".xlsx"
     );
     
-// ============================================================================
+// ============================================================
 // BLOCK 3
-// OFFICE FILTER LIBRARY - PARSE CANONICAL DEFINITIONS
-//
-// Requires:
-//     using System;
-//     using System.Collections.Generic;
-//     using System.Text;
-//     using System.Text.RegularExpressions;
-//
-// This intentionally avoids Newtonsoft.Json / System.Text.Json so the
-// Launchpad script has no additional assembly dependency.
-//
-// The Office Library schema is locked at 1.1.
-// We only need these canonical values for project comparison:
-//
-//     name
-//     categorySignature
-//     ruleSignature
-//     definitionSignature
-//     definitionHash
-//
-// ============================================================================
+// Read Office Filter Library JSON
+// No Newtonsoft.Json / System.Text.Json dependency
+// ============================================================
 
+string officeJson = File.ReadAllText(officeLibraryPath);
 
-// ============================================================================
-// JSON STRING UNESCAPER
-// ============================================================================
-
-Func<string, string> JsonUnescape =
-    delegate(string value)
+string GetJsonStringValue(string json, string key)
 {
-    if (value == null)
-        return null;
+    Match m = Regex.Match(
+        json,
+        "\"" + Regex.Escape(key) + "\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"",
+        RegexOptions.IgnoreCase
+    );
 
-    StringBuilder sb =
-        new StringBuilder();
+    if (!m.Success)
+        return "";
 
-    for (int i = 0; i < value.Length; i++)
+    return Regex.Unescape(m.Groups[1].Value);
+}
+
+string GetJsonObjectBlock(string json, int objectStartIndex)
+{
+    int depth = 0;
+    bool inString = false;
+    bool escape = false;
+
+    for (int i = objectStartIndex; i < json.Length; i++)
     {
-        char c = value[i];
+        char c = json[i];
 
-        if (
-            c != '\\' ||
-            i == value.Length - 1
-        )
+        if (inString)
         {
-            sb.Append(c);
+            if (escape)
+            {
+                escape = false;
+            }
+            else if (c == '\\')
+            {
+                escape = true;
+            }
+            else if (c == '"')
+            {
+                inString = false;
+            }
+
             continue;
         }
 
-        char next =
-            value[++i];
-
-        switch (next)
+        if (c == '"')
         {
-            case '"':
-                sb.Append('"');
-                break;
+            inString = true;
+            continue;
+        }
 
-            case '\\':
-                sb.Append('\\');
-                break;
+        if (c == '{')
+        {
+            depth++;
+        }
+        else if (c == '}')
+        {
+            depth--;
 
-            case '/':
-                sb.Append('/');
-                break;
-
-            case 'b':
-                sb.Append('\b');
-                break;
-
-            case 'f':
-                sb.Append('\f');
-                break;
-
-            case 'n':
-                sb.Append('\n');
-                break;
-
-            case 'r':
-                sb.Append('\r');
-                break;
-
-            case 't':
-                sb.Append('\t');
-                break;
-
-            case 'u':
-
-                if (i + 4 < value.Length)
-                {
-                    string hex =
-                        value.Substring(
-                            i + 1,
-                            4
-                        );
-
-                    int code;
-
-                    if (
-                        int.TryParse(
-                            hex,
-                            System.Globalization.NumberStyles.HexNumber,
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            out code
-                        )
-                    )
-                    {
-                        sb.Append(
-                            (char)code
-                        );
-
-                        i += 4;
-                    }
-                    else
-                    {
-                        sb.Append("\\u");
-                    }
-                }
-                else
-                {
-                    sb.Append("\\u");
-                }
-
-                break;
-
-            default:
-
-                // Preserve unexpected escape rather than silently
-                // destroying data.
-                sb.Append('\\');
-                sb.Append(next);
-                break;
+            if (depth == 0)
+                return json.Substring(
+                    objectStartIndex,
+                    i - objectStartIndex + 1
+                );
         }
     }
 
-    return sb.ToString();
-};
+    return "";
+}
 
-
-// ============================================================================
-// EXTRACT ALL VALUES FOR A JSON STRING PROPERTY
-//
-// Example:
-//     "definitionHash": "abc123"
-//
-// Returns every occurrence in file order.
-// ============================================================================
-
-Func<string, string, List<string>> ExtractJsonStringValues =
-    delegate(
-        string json,
-        string propertyName
-    )
+string GetJsonArrayBlock(string json, string key)
 {
-    List<string> results =
-        new List<string>();
+    Match keyMatch = Regex.Match(
+        json,
+        "\"" + Regex.Escape(key) + "\"\\s*:\\s*\\[",
+        RegexOptions.IgnoreCase
+    );
 
-    if (
-        string.IsNullOrEmpty(json) ||
-        string.IsNullOrEmpty(propertyName)
-    )
+    if (!keyMatch.Success)
+        return "";
+
+    int start = keyMatch.Index + keyMatch.Length - 1;
+
+    int depth = 0;
+    bool inString = false;
+    bool escape = false;
+
+    for (int i = start; i < json.Length; i++)
     {
-        return results;
+        char c = json[i];
+
+        if (inString)
+        {
+            if (escape)
+            {
+                escape = false;
+            }
+            else if (c == '\\')
+            {
+                escape = true;
+            }
+            else if (c == '"')
+            {
+                inString = false;
+            }
+
+            continue;
+        }
+
+        if (c == '"')
+        {
+            inString = true;
+            continue;
+        }
+
+        if (c == '[')
+        {
+            depth++;
+        }
+        else if (c == ']')
+        {
+            depth--;
+
+            if (depth == 0)
+                return json.Substring(
+                    start,
+                    i - start + 1
+                );
+        }
     }
 
-    string pattern =
-        "\"" +
-        Regex.Escape(propertyName) +
-        "\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"";
+    return "";
+}
 
-    MatchCollection matches =
-        Regex.Matches(
+List<string> GetJsonObjectsFromArray(string arrayJson)
+{
+    List<string> objects = new List<string>();
+
+    if (String.IsNullOrWhiteSpace(arrayJson))
+        return objects;
+
+    bool inString = false;
+    bool escape = false;
+    int depth = 0;
+    int objectStart = -1;
+
+    for (int i = 0; i < arrayJson.Length; i++)
+    {
+        char c = arrayJson[i];
+
+        if (inString)
+        {
+            if (escape)
+            {
+                escape = false;
+            }
+            else if (c == '\\')
+            {
+                escape = true;
+            }
+            else if (c == '"')
+            {
+                inString = false;
+            }
+
+            continue;
+        }
+
+        if (c == '"')
+        {
+            inString = true;
+            continue;
+        }
+
+        if (c == '{')
+        {
+            if (depth == 0)
+                objectStart = i;
+
+            depth++;
+        }
+        else if (c == '}')
+        {
+            depth--;
+
+            if (depth == 0 && objectStart >= 0)
+            {
+                objects.Add(
+                    arrayJson.Substring(
+                        objectStart,
+                        i - objectStart + 1
+                    )
+                );
+
+                objectStart = -1;
+            }
+        }
+    }
+
+    return objects;
+}
+
+List<string> GetJsonStringArrayValues(
+    string json,
+    string key
+)
+{
+    List<string> values = new List<string>();
+
+    string arrayBlock = GetJsonArrayBlock(json, key);
+
+    if (String.IsNullOrWhiteSpace(arrayBlock))
+        return values;
+
+    MatchCollection matches = Regex.Matches(
+        arrayBlock,
+        "\"((?:\\\\.|[^\"])*)\""
+    );
+
+    foreach (Match m in matches)
+    {
+        values.Add(
+            Regex.Unescape(m.Groups[1].Value)
+        );
+    }
+
+    return values;
+}
+
+string GetJsonObjectValue(
+    string json,
+    string key
+)
+{
+    Match keyMatch =
+        Regex.Match(
             json,
-            pattern,
-            RegexOptions.Singleline
+            "\"" +
+            Regex.Escape(key) +
+            "\"\\s*:\\s*\\{",
+            RegexOptions.IgnoreCase
         );
 
-    foreach (Match match in matches)
-    {
-        if (
-            match.Success &&
-            match.Groups.Count > 1
+    if (!keyMatch.Success)
+        return "";
+
+    int objectStart =
+        json.IndexOf(
+            '{',
+            keyMatch.Index
+        );
+
+    if (objectStart < 0)
+        return "";
+
+    return GetJsonObjectBlock(
+        json,
+        objectStart
+    );
+}
+
+
+// ------------------------------------------------------------
+// Build human-readable expression from office JSON ruleTree
+// ------------------------------------------------------------
+
+Func<string, string> BuildOfficeJsonRuleExpression =
+    null;
+
+
+BuildOfficeJsonRuleExpression =
+    delegate(string nodeJson)
+{
+    if (String.IsNullOrWhiteSpace(nodeJson))
+        return "";
+
+
+    string nodeType =
+        GetJsonStringValue(
+            nodeJson,
+            "nodeType"
+        );
+
+
+    string ruleType =
+        GetJsonStringValue(
+            nodeJson,
+            "ruleType"
+        );
+
+
+    // --------------------------------------------------------
+    // FILTER INVERSE RULE
+    //
+    // The JSON exporter already stores the effective operator
+    // in the inner rule, e.g. DoesNotContain / NotEquals.
+    // Therefore render the inner rule directly.
+    // --------------------------------------------------------
+
+    if (
+        String.Equals(
+            ruleType,
+            "FilterInverseRule",
+            StringComparison.OrdinalIgnoreCase
         )
+    )
+    {
+        string innerRuleJson =
+            GetJsonObjectValue(
+                nodeJson,
+                "innerRule"
+            );
+
+        if (!String.IsNullOrWhiteSpace(innerRuleJson))
         {
-            results.Add(
-                JsonUnescape(
-                    match.Groups[1].Value
-                )
+            return BuildOfficeJsonRuleExpression(
+                innerRuleJson
             );
         }
     }
 
-    return results;
+
+    // --------------------------------------------------------
+    // TERMINAL RULE
+    // --------------------------------------------------------
+
+    if (
+        String.Equals(
+            nodeType,
+            "rule",
+            StringComparison.OrdinalIgnoreCase
+        )
+    )
+    {
+        string parameterName =
+            GetJsonStringValue(
+                nodeJson,
+                "parameterName"
+            );
+
+        string operatorName =
+            GetJsonStringValue(
+                nodeJson,
+                "operator"
+            );
+
+        string rawValue =
+            GetJsonStringValue(
+                nodeJson,
+                "rawValue"
+            );
+
+
+        if (String.IsNullOrWhiteSpace(parameterName))
+            parameterName = "(Unknown Parameter)";
+
+
+        if (String.IsNullOrWhiteSpace(operatorName))
+            operatorName = "(Unknown Operator)";
+
+
+        // Operators that do not require a comparison value.
+        if (
+            String.Equals(
+                operatorName,
+                "HasValue",
+                StringComparison.OrdinalIgnoreCase
+            )
+            ||
+            String.Equals(
+                operatorName,
+                "HasNoValue",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return
+                parameterName +
+                " " +
+                operatorName;
+        }
+
+
+        // String rules are quoted for readability.
+        bool quoteValue =
+            !String.IsNullOrWhiteSpace(ruleType)
+            &&
+            ruleType.IndexOf(
+                "String",
+                StringComparison.OrdinalIgnoreCase
+            ) >= 0;
+
+
+        string displayValue =
+            rawValue ?? "";
+
+
+        if (quoteValue)
+        {
+            displayValue =
+                "\"" +
+                displayValue.Replace(
+                    "\"",
+                    "\\\""
+                ) +
+                "\"";
+        }
+
+
+        return
+            parameterName +
+            " " +
+            operatorName +
+            " " +
+            displayValue;
+    }
+
+
+    // --------------------------------------------------------
+    // LOGICAL / PARAMETER FILTER NODE
+    // --------------------------------------------------------
+
+    string logic =
+        GetJsonStringValue(
+            nodeJson,
+            "logic"
+        );
+
+
+    if (String.IsNullOrWhiteSpace(logic))
+        logic = "AND";
+
+
+    List<string> childExpressions =
+        new List<string>();
+
+
+    // Logical nodes store child filters under "children".
+    string childrenArray =
+        GetJsonArrayBlock(
+            nodeJson,
+            "children"
+        );
+
+
+    if (!String.IsNullOrWhiteSpace(childrenArray))
+    {
+        foreach (
+            string childJson
+            in GetJsonObjectsFromArray(
+                childrenArray
+            )
+        )
+        {
+            string expression =
+                BuildOfficeJsonRuleExpression(
+                    childJson
+                );
+
+            if (!String.IsNullOrWhiteSpace(expression))
+            {
+                childExpressions.Add(
+                    expression
+                );
+            }
+        }
+    }
+
+
+    // ElementParameterFilter nodes store terminal rules
+    // under "rules".
+    string rulesArray =
+        GetJsonArrayBlock(
+            nodeJson,
+            "rules"
+        );
+
+
+    if (!String.IsNullOrWhiteSpace(rulesArray))
+    {
+        foreach (
+            string ruleJson
+            in GetJsonObjectsFromArray(
+                rulesArray
+            )
+        )
+        {
+            string expression =
+                BuildOfficeJsonRuleExpression(
+                    ruleJson
+                );
+
+            if (!String.IsNullOrWhiteSpace(expression))
+            {
+                childExpressions.Add(
+                    expression
+                );
+            }
+        }
+    }
+
+
+    if (childExpressions.Count == 0)
+        return "";
+
+
+    if (childExpressions.Count == 1)
+        return childExpressions[0];
+
+
+    return
+        "(" +
+        String.Join(
+            " " +
+            logic.ToUpperInvariant() +
+            " ",
+            childExpressions
+        ) +
+        ")";
 };
 
-
-// ============================================================================
-// OFFICE LIBRARY VERSION
-// ============================================================================
-
-List<string> libraryVersions =
-    ExtractJsonStringValues(
-        officeLibraryJson,
+string officeLibraryVersion =
+    GetJsonStringValue(
+        officeJson,
         "libraryVersion"
     );
 
-string officeLibraryVersion =
-    libraryVersions.Count > 0
-    ? libraryVersions[0]
-    : "";
+if (String.IsNullOrWhiteSpace(officeLibraryVersion))
+    officeLibraryVersion = "Unknown";
 
 
-// ============================================================================
-// EXTRACT CANONICAL FILTER DATA
-// ============================================================================
-
-List<string> officeNames =
-    ExtractJsonStringValues(
-        officeLibraryJson,
-        "name"
-    );
-
-List<string> officeCategorySignatures =
-    ExtractJsonStringValues(
-        officeLibraryJson,
-        "categorySignature"
-    );
-
-List<string> officeRuleSignatures =
-    ExtractJsonStringValues(
-        officeLibraryJson,
-        "ruleSignature"
-    );
-
-List<string> officeDefinitionSignatures =
-    ExtractJsonStringValues(
-        officeLibraryJson,
-        "definitionSignature"
-    );
-
-List<string> officeDefinitionHashes =
-    ExtractJsonStringValues(
-        officeLibraryJson,
-        "definitionHash"
-    );
-
-
-// ============================================================================
-// IMPORTANT:
-//
-// "name" appears not only at filter level, but also inside categories.
-//
-// Therefore we DO NOT pair officeNames by list index.
-//
-// Instead, the authoritative identity comes from:
-//
-//     definitionSignature
-//
-// which always starts:
-//
-//     NAME=<filter name>|CATEGORIES=...
-//
-// ============================================================================
-
-
-// ============================================================================
-// OFFICE FILTER LOOKUPS
-//
-// Key:
-//
-//     officeByName
-//         Office filter name -> definition signature
-//
-//     officeHashByName
-//         Office filter name -> definition hash
-//
-//     officeCategorySignatureByName
-//         Office filter name -> canonical category signature
-//
-//     officeRuleSignatureByName
-//         Office filter name -> canonical rule signature
-//
-//     officeNameByDefinitionHash
-//         exact definition hash -> office filter name
-//
-// ============================================================================
+// ------------------------------------------------------------
+// Office filter lookup dictionaries
+// ------------------------------------------------------------
 
 Dictionary<string, string> officeByName =
     new Dictionary<string, string>(
-        StringComparer.Ordinal
+        StringComparer.OrdinalIgnoreCase
     );
 
 Dictionary<string, string> officeHashByName =
     new Dictionary<string, string>(
-        StringComparer.Ordinal
+        StringComparer.OrdinalIgnoreCase
     );
 
 Dictionary<string, string> officeCategorySignatureByName =
     new Dictionary<string, string>(
-        StringComparer.Ordinal
+        StringComparer.OrdinalIgnoreCase
     );
 
 Dictionary<string, string> officeRuleSignatureByName =
     new Dictionary<string, string>(
-        StringComparer.Ordinal
+        StringComparer.OrdinalIgnoreCase
     );
 
 Dictionary<string, string> officeNameByDefinitionHash =
@@ -515,303 +766,177 @@ Dictionary<string, string> officeNameByDefinitionHash =
     );
 
 
-// ============================================================================
-// VALIDATE CANONICAL ARRAY COUNTS
-// ============================================================================
-
-int officeDefinitionCount =
-    officeDefinitionSignatures.Count;
-
-
-if (
-    officeDefinitionCount == 0
-)
-{
-    TaskDialog.Show(
-        "Filter Audit",
-        "No canonical filter definitions were found in the Office " +
-        "Filter Library.\n\n" +
-        officeLibraryPath
+// NEW:
+// Human-readable rule expression from the office library.
+Dictionary<string, string> officeRuleExpressionByName =
+    new Dictionary<string, string>(
+        StringComparer.OrdinalIgnoreCase
     );
 
-    return;
-}
 
-
-if (
-    officeDefinitionHashes.Count !=
-    officeDefinitionCount
-)
-{
-    TaskDialog.Show(
-        "Filter Audit",
-        "Office Filter Library validation failed.\n\n" +
-
-        "Definition Signatures: " +
-        officeDefinitionCount +
-        "\n" +
-
-        "Definition Hashes: " +
-        officeDefinitionHashes.Count +
-        "\n\n" +
-
-        "The library appears incomplete or corrupt."
+// NEW:
+// Individual office canonical terminal rules.
+// Used later to generate Rule Difference Summary.
+Dictionary<string, HashSet<string>> officeTerminalRulesByName =
+    new Dictionary<string, HashSet<string>>(
+        StringComparer.OrdinalIgnoreCase
     );
 
-    return;
-}
 
+// ------------------------------------------------------------
+// Read filter objects
+// ------------------------------------------------------------
 
-if (
-    officeCategorySignatures.Count !=
-    officeDefinitionCount
-)
-{
-    TaskDialog.Show(
-        "Filter Audit",
-        "Office Filter Library validation failed.\n\n" +
-
-        "Definitions: " +
-        officeDefinitionCount +
-        "\n" +
-
-        "Category Signatures: " +
-        officeCategorySignatures.Count
+string filtersArray =
+    GetJsonArrayBlock(
+        officeJson,
+        "filters"
     );
 
-    return;
-}
+List<string> officeFilterObjects =
+    GetJsonObjectsFromArray(filtersArray);
 
-
-if (
-    officeRuleSignatures.Count !=
-    officeDefinitionCount
-)
+foreach (string filterJson in officeFilterObjects)
 {
-    TaskDialog.Show(
-        "Filter Audit",
-        "Office Filter Library validation failed.\n\n" +
-
-        "Definitions: " +
-        officeDefinitionCount +
-        "\n" +
-
-        "Rule Signatures: " +
-        officeRuleSignatures.Count
-    );
-
-    return;
-}
-
-
-// ============================================================================
-// PARSE FILTER NAME FROM DEFINITION SIGNATURE
-//
-// Format:
-//
-// NAME=<name>|CATEGORIES=<categories>|RULES=<rules>
-//
-// ============================================================================
-
-Func<string, string> GetNameFromDefinitionSignature =
-    delegate(string signature)
-{
-    if (
-        string.IsNullOrEmpty(signature)
-    )
-    {
-        return null;
-    }
-
-    const string prefix =
-        "NAME=";
-
-    const string separator =
-        "|CATEGORIES=";
-
-    if (
-        !signature.StartsWith(
-            prefix,
-            StringComparison.Ordinal
-        )
-    )
-    {
-        return null;
-    }
-
-    int separatorIndex =
-        signature.IndexOf(
-            separator,
-            StringComparison.Ordinal
+    string name =
+        GetJsonStringValue(
+            filterJson,
+            "name"
         );
 
-    if (
-        separatorIndex <
-        prefix.Length
-    )
-    {
-        return null;
-    }
+    if (String.IsNullOrWhiteSpace(name))
+        continue;
 
-    return
-        signature.Substring(
-            prefix.Length,
-            separatorIndex - prefix.Length
-        );
-};
-
-
-// ============================================================================
-// BUILD OFFICE LOOKUPS
-// ============================================================================
-
-for (
-    int i = 0;
-    i < officeDefinitionCount;
-    i++
-)
-{
-    string definitionSignature =
-        officeDefinitionSignatures[i];
 
     string definitionHash =
-        officeDefinitionHashes[i];
+        GetJsonStringValue(
+            filterJson,
+            "definitionHash"
+        );
 
     string categorySignature =
-        officeCategorySignatures[i];
+        GetJsonStringValue(
+            filterJson,
+            "categorySignature"
+        );
 
     string ruleSignature =
-        officeRuleSignatures[i];
-
-    string officeFilterName =
-        GetNameFromDefinitionSignature(
-            definitionSignature
+        GetJsonStringValue(
+            filterJson,
+            "ruleSignature"
         );
 
 
-    if (
-        string.IsNullOrWhiteSpace(
-            officeFilterName
-        )
-    )
+    // --------------------------------------------------------
+	// Build human-readable office expression directly from
+	// the structured ruleTree stored in the JSON library.
+	// --------------------------------------------------------
+	
+	string officeRuleExpression = "";
+	
+	string officeRuleTreeJson =
+	    GetJsonObjectValue(
+	        filterJson,
+	        "ruleTree"
+	    );
+	
+	if (!String.IsNullOrWhiteSpace(officeRuleTreeJson))
+	{
+	    officeRuleExpression =
+	        BuildOfficeJsonRuleExpression(
+	            officeRuleTreeJson
+	        );
+	}
+
+
+    officeByName[name] =
+        filterJson;
+
+    officeHashByName[name] =
+        definitionHash ?? "";
+
+    officeCategorySignatureByName[name] =
+        categorySignature ?? "";
+
+    officeRuleSignatureByName[name] =
+        ruleSignature ?? "";
+
+    officeRuleExpressionByName[name] =
+        officeRuleExpression ?? "";
+
+
+    if (!String.IsNullOrWhiteSpace(definitionHash))
     {
-        TaskDialog.Show(
-            "Filter Audit",
-            "Office Filter Library validation failed.\n\n" +
-            "Could not determine the filter name from definition:\n\n" +
-            definitionSignature
-        );
-
-        return;
+        officeNameByDefinitionHash[definitionHash] =
+            name;
     }
 
 
-    if (
-        officeByName.ContainsKey(
-            officeFilterName
-        )
-    )
-    {
-        TaskDialog.Show(
-            "Filter Audit",
-            "Office Filter Library validation failed.\n\n" +
-            "Duplicate office filter name:\n\n" +
-            officeFilterName
+    // --------------------------------------------------------
+    // Extract individual canonical terminal rules
+    // from the stored RULES signature.
+    //
+    // The exact splitting is intentionally conservative.
+    // Block 5 will still be able to fall back to comparing the
+    // complete rule signature when individual rules cannot be
+    // separated safely.
+    // --------------------------------------------------------
+
+    HashSet<string> terminalRules =
+        new HashSet<string>(
+            StringComparer.Ordinal
         );
 
-        return;
-    }
-
-
-    officeByName.Add(
-        officeFilterName,
-        definitionSignature
-    );
-
-
-    officeHashByName.Add(
-        officeFilterName,
-        definitionHash
-    );
-
-
-    officeCategorySignatureByName.Add(
-        officeFilterName,
-        categorySignature
-    );
-
-
-    officeRuleSignatureByName.Add(
-        officeFilterName,
-        ruleSignature
-    );
-
-
-    if (
-        !officeNameByDefinitionHash.ContainsKey(
-            definitionHash
-        )
-    )
+    if (!String.IsNullOrWhiteSpace(ruleSignature))
     {
-        officeNameByDefinitionHash.Add(
-            definitionHash,
-            officeFilterName
-        );
+        string normalizedRuleSignature =
+            ruleSignature.Trim();
+
+
+        // Common canonical tree separators used by the library.
+        // We only add non-empty terminal-looking fragments.
+        string[] candidateParts =
+            Regex.Split(
+                normalizedRuleSignature,
+                @"(?<=\))\s*(?:AND|OR|\|\||&&)\s*(?=\()",
+                RegexOptions.IgnoreCase
+            );
+
+        if (candidateParts.Length > 1)
+        {
+            foreach (string part in candidateParts)
+            {
+                string p = part.Trim();
+
+                if (!String.IsNullOrWhiteSpace(p))
+                    terminalRules.Add(p);
+            }
+        }
+        else
+        {
+            // Keep full signature as one comparison unit.
+            terminalRules.Add(
+                normalizedRuleSignature
+            );
+        }
     }
+
+    officeTerminalRulesByName[name] =
+        terminalRules;
 }
 
 
-// ============================================================================
-// FINAL LIBRARY COUNT CHECK
-// ============================================================================
+// ------------------------------------------------------------
+// Basic validation
+// ------------------------------------------------------------
 
-if (
-    officeByName.Count !=
-    officeDefinitionCount
-)
+if (officeByName.Count == 0)
 {
-    TaskDialog.Show(
-        "Filter Audit",
-        "Office Filter Library validation failed.\n\n" +
-
-        "Definitions found: " +
-        officeDefinitionCount +
-        "\n" +
-
-        "Office filters loaded: " +
-        officeByName.Count
+    throw new Exception(
+        "No office filters were found in the office library:\n\n"
+        + officeLibraryPath
     );
-
-    return;
 }
-
-
-// ============================================================================
-// OPTIONAL EXPECTED COUNT CHECK
-//
-// The current approved library contains 16 filters.
-//
-// This is intentionally only informational rather than hard-coded as a
-// permanent requirement, because the office library can grow in future.
-// ============================================================================
-
-bool officeLibraryCurrentExpectedCount =
-    officeByName.Count == 16;
-
-
-// ============================================================================
-// BLOCK 3 COMPLETE
-//
-// Available to subsequent blocks:
-//
-//     officeLibraryVersion
-//     officeByName
-//     officeHashByName
-//     officeCategorySignatureByName
-//     officeRuleSignatureByName
-//     officeNameByDefinitionHash
-//
-// ============================================================================
 
 // ============================================================================
 // BLOCK 4
@@ -2607,6 +2732,13 @@ foreach (
 
     string analysisNote =
         "";
+        
+	string officeRuleExpression =
+	    "";
+	
+	string ruleDifferenceSummary =
+	    "";        
+	       
 
 
     // ========================================================================
@@ -2969,6 +3101,95 @@ foreach (
         }
     }
 
+// ========================================================================
+// OFFICE REFERENCE RULE INFORMATION
+//
+// Block 7 will populate the human-readable office rule expression and
+// detailed added/removed rule comparison where possible.
+//
+// At this stage we retain the office reference and provide a safe
+// definition-level summary.
+// ========================================================================
+
+if (
+    !string.IsNullOrWhiteSpace(
+        officeFilterName
+    )
+)
+{
+    string storedOfficeRuleExpression = "";
+
+    if (
+        officeRuleExpressionByName.TryGetValue(
+            officeFilterName,
+            out storedOfficeRuleExpression
+        )
+    )
+    {
+        officeRuleExpression =
+            storedOfficeRuleExpression ?? "";
+    }
+
+
+    if (
+        officeClassification ==
+        "Office"
+    )
+    {
+        ruleDifferenceSummary =
+            "Exact office definition";
+    }
+
+    else if (
+        officeClassification ==
+        "Modified Office"
+    )
+    {
+        if (
+            definitionMatch ==
+            "Rules Modified"
+        )
+        {
+            ruleDifferenceSummary =
+                "Rules modified";
+        }
+
+        else if (
+            definitionMatch ==
+            "Categories Modified"
+        )
+        {
+            ruleDifferenceSummary =
+                "Categories modified";
+        }
+
+        else if (
+            definitionMatch ==
+            "Categories and Rules Modified"
+        )
+        {
+            ruleDifferenceSummary =
+                "Categories and rules modified";
+        }
+        else
+        {
+            ruleDifferenceSummary =
+                definitionMatch;
+        }
+    }
+
+    else if (
+        officeClassification ==
+        "Custom" &&
+        definitionMatch ==
+        "Same Categories and Rules / Different Name"
+    )
+    {
+        ruleDifferenceSummary =
+            "Same office categories and rules; filter name differs";
+    }
+}
+
 
     // ========================================================================
     // CREATE FILTER RECORD
@@ -3050,6 +3271,12 @@ foreach (
 
     record["Rule Expression"] =
         "";
+        
+	record["Office Rule Expression"] =
+	    officeRuleExpression;
+	
+	record["Rule Difference Summary"] =
+	    ruleDifferenceSummary;        
 
 
     // Internal canonical values.
@@ -5857,6 +6084,167 @@ WalkRuleTree =
     // Unknown ElementFilter is deliberately preserved at filter level.
 };
 
+// ============================================================================
+// OFFICE RULE DIFFERENCE SUMMARY
+//
+// Comparison is based on the complete canonical rule signatures.
+// We deliberately do not attempt to split logical trees into individual
+// conditions here because doing so could misrepresent AND / OR / inverse
+// structures.
+//
+// Detailed differences therefore report the complete approved office
+// definition and the complete project definition when they differ.
+// ============================================================================
+
+Func<
+    Dictionary<string, object>,
+    string
+> BuildOfficeRuleDifferenceSummary =
+    delegate(
+        Dictionary<string, object> filterRecord
+    )
+{
+    string officeClassification =
+        Convert.ToString(
+            filterRecord["Office Classification"]
+        );
+
+    string officeFilterName =
+        Convert.ToString(
+            filterRecord["Office Filter Name"]
+        );
+
+    string definitionMatch =
+        Convert.ToString(
+            filterRecord["Definition Match"]
+        );
+
+    string projectRuleSignature =
+        Convert.ToString(
+            filterRecord["_RuleSignature"]
+        );
+
+
+    if (
+        string.IsNullOrWhiteSpace(
+            officeFilterName
+        )
+    )
+    {
+        return "";
+    }
+
+
+    // Exact approved office definition.
+    if (
+        officeClassification ==
+        "Office"
+    )
+    {
+        return
+            "Exact office definition";
+    }
+
+
+    // Same rules/categories but renamed project filter.
+    if (
+        officeClassification ==
+        "Custom" &&
+        definitionMatch ==
+        "Same Categories and Rules / Different Name"
+    )
+    {
+        return
+            "Same office categories and rules; filter name differs";
+    }
+
+
+    if (
+        officeClassification !=
+        "Modified Office"
+    )
+    {
+        return "";
+    }
+
+
+    // Category-only modification.
+    if (
+        definitionMatch ==
+        "Categories Modified"
+    )
+    {
+        return
+            "Categories modified; rules match approved office definition";
+    }
+
+
+    string officeRuleSignature =
+        "";
+
+    officeRuleSignatureByName.TryGetValue(
+        officeFilterName,
+        out officeRuleSignature
+    );
+
+
+    if (
+        string.IsNullOrWhiteSpace(
+            officeRuleSignature
+        )
+    )
+    {
+        if (
+            definitionMatch ==
+            "Categories and Rules Modified"
+        )
+        {
+            return
+                "Categories and rules modified; approved office rule " +
+                "signature unavailable";
+        }
+
+        return
+            "Rules modified; approved office rule signature unavailable";
+    }
+
+
+    if (
+        string.Equals(
+            projectRuleSignature,
+            officeRuleSignature,
+            StringComparison.Ordinal
+        )
+    )
+    {
+        if (
+            definitionMatch ==
+            "Categories and Rules Modified"
+        )
+        {
+            return
+                "Categories modified; rules match approved office definition";
+        }
+
+        return
+            "Rules match approved office definition";
+    }
+
+
+    string prefix =
+        definitionMatch ==
+        "Categories and Rules Modified"
+        ? "Categories and rules modified"
+        : "Rules modified";
+
+
+    return
+        prefix +
+        " | Office: " +
+        officeRuleSignature +
+        " | Project: " +
+        projectRuleSignature;
+};
 
 // ============================================================================
 // PROCESS EVERY PARAMETER FILTER
@@ -5910,18 +6298,101 @@ foreach (
     // ========================================================================
 
     if (rootFilter == null)
+	{
+	    filterRecord["Rule Count"] =
+	        0;
+	
+	    filterRecord["Rule Analysis Status"] =
+	        "Fully Analysed";
+	
+	    filterRecord["Rule Expression"] =
+	        "<No Rules>";
+	
+	
+	    string noRuleOfficeReferenceName =
+	        Convert.ToString(
+	            filterRecord["Office Filter Name"]
+	        );
+	
+	    if (
+		    !string.IsNullOrWhiteSpace(
+		        noRuleOfficeReferenceName
+		    )
+		)
+		{
+		    string storedOfficeExpression =
+		        "";
+		
+		    if (
+		        officeRuleExpressionByName.TryGetValue(
+		            noRuleOfficeReferenceName,
+		            out storedOfficeExpression
+		        )
+		    )
+		    {
+		        if (
+		            !string.IsNullOrWhiteSpace(
+		                storedOfficeExpression
+		            )
+		        )
+		        {
+		            filterRecord["Office Rule Expression"] =
+		                storedOfficeExpression;
+		        }
+		    }
+		}	
+	
+	    filterRecord["Rule Difference Summary"] =
+	        BuildOfficeRuleDifferenceSummary(
+	            filterRecord
+	        );
+	
+	    continue;
+	}
+    
+    // ========================================================================
+// OFFICE REFERENCE / DIFFERENCE
+// ========================================================================
+
+string officeReferenceName =
+    Convert.ToString(
+        filterRecord["Office Filter Name"]
+    );
+
+
+if (
+    !string.IsNullOrWhiteSpace(
+        officeReferenceName
+    )
+)
+{
+    string storedOfficeExpression =
+        "";
+
+    if (
+        officeRuleExpressionByName.TryGetValue(
+            officeReferenceName,
+            out storedOfficeExpression
+        )
+    )
     {
-        filterRecord["Rule Count"] =
-            0;
-
-        filterRecord["Rule Analysis Status"] =
-            "Fully Analysed";
-
-        filterRecord["Rule Expression"] =
-            "<No Rules>";
-
-        continue;
+        if (
+            !string.IsNullOrWhiteSpace(
+                storedOfficeExpression
+            )
+        )
+        {
+            filterRecord["Office Rule Expression"] =
+                storedOfficeExpression;
+        }
     }
+}
+
+
+filterRecord["Rule Difference Summary"] =
+    BuildOfficeRuleDifferenceSummary(
+        filterRecord
+    );
 
 
     string rootLogic =
@@ -9206,7 +9677,9 @@ string[] filterColumns =
     "Category Groups",
     "Rule Count",
     "Rule Analysis Status",
-    "Rule Expression"
+    "Rule Expression",
+    "Office Rule Expression",
+    "Rule Difference Summary"
 };
 
 
@@ -9712,20 +10185,22 @@ try
 
 
         foreach (
-            string wrapColumnName
-            in new string[]
-            {
-                "Rule Expression",
-                "Raw Rule Data",
-                "Rule Signature",
-                "Filter A Rule Expression",
-                "Filter B Rule Expression",
-                "Reason",
-                "Definition Match",
-                "RVT Path",
-                "Office Filter Library Path"
-            }
-        )
+		    string wrapColumnName
+		    in new string[]
+		    {
+		        "Rule Expression",
+		        "Office Rule Expression",
+		        "Rule Difference Summary",
+		        "Raw Rule Data",
+		        "Rule Signature",
+		        "Filter A Rule Expression",
+		        "Filter B Rule Expression",
+		        "Reason",
+		        "Definition Match",
+		        "RVT Path",
+		        "Office Filter Library Path"
+		    }
+		)
         {
             int index =
                 Array.IndexOf(
