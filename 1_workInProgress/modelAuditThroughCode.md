@@ -1,18 +1,10 @@
-
-# Model Audit Through Code
-
-## Links
-- [Model Audit Code](https://github.com/efeberenguer/FRB_revitAPI/blob/master/2_shared/AAI_modelAudits/AAI_modelAudits.cs)
-- [Model Audit HTML Output](https://github.com/efeberenguer/FRB_revitAPI/blob/master/2_shared/AAI_modelAudits/modelAudit.html)
-- [Example of audit with comments](https://acc.autodesk.eu/docs/files/projects/5b353290-66c7-48a2-9596-69e7fc2e6c40?folderUrn=urn%3Aadsk.wipemea%3Afs.folder%3Aco.iMGL3SMOTga-5yKZlzPijw&entityId=urn%3Aadsk.wipemea%3Adm.lineage%3AiKbjMvT9Thyno91QgJMqHw&viewModel=detail&moduleId=folders&viewableGuid=a74ea608-29a4-5289-b423-136f1b14dd85&markups=%7B%22selection%22%3A%7B%22ids%22%3A%5B%221989b3d7-d295-4cff-a496-fab604b0e3d7%22%5D%7D%7D)
-
 ```
 ═══════════════════════════════════════════════════════════════
 1. GENERAL INFORMATION
 ═══════════════════════════════════════════════════════════════
 
 ─────────────────
-1.1 Model auditor
+1.1 Model auditor: 
 ─────────────────
 Francisco Berenguer - fberenguer@adamson-associates.com
 
@@ -72,120 +64,210 @@ Interior
 2.1A Linked DWGs
 ────────────────
 
-Requirements:
+// Scenario 1: No linked DWGs in the model
+
+Model requirements
+──────────────────
 - RVT models may have one or more linked DWGs. 
 - Linked DWGs must not have more than one instance.
 
-// Scenario 1: No linked DWGs in the model
-
+Audit results
+─────────────
 - Linked DWGs types in the model: 0
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: Linked DWGS in the model, single instances
+
+Model requirements
+──────────────────
+- RVT models may have one or more linked DWGs. 
+- Linked DWGs must not have more than one instance.
+
+Audit results
+─────────────
 - Linked DWGs types in the model: 3
-    - EST-AC Level 22.dwg
-    - Level 02.dwg
-    - EST-AC Level MR.dwg
-    - Redundant instances of linked DWGs: 0
-- Action required: None.
+    1. EST-AC Level 22.dwg
+    2. EST-AC Level MR.dwg
+    3. Level 02.dwg
+- Redundant instances of linked DWGs: 0
+
+Model requirements
+──────────────────
+- Project team members should review the linked DWGs in the model and confirm if there are types that must be removed.
 
 // Scenario 3: Linked DWGS, multiple instances
 
+Model requirements
+──────────────────
+- RVT models may have one or more linked DWGs. 
+- Linked DWGs must not have more than one instance.
+
+Audit results
+─────────────
 - Linked DWGs types in the model: 3
-    - EST-AC Level 22.dwg (multiple instances)
-    - Level 02.dwg
-    - EST-AC Level MR.dwg (multiple instances)
-    - Redundant instances of linked DWGs: 5
+    1. EST-AC Level 22.dwg (multiple instances)
+    2. EST-AC Level MR.dwg
+    3. Level 02.dwg (multiple instances)
+- Redundant instances of linked DWGs: 5
 
-- Action required: Redundant instances must be deleted.
-    - Import symbol name: EST-AC Level 22.dwg | Instance(s) to delete: 1 | Element ID(s):
-        - 1242178
-        - 1242178
-    - Import symbol name: Level 02.dwg | Instance(s) to delete: 2 | Element ID(s):
-        - 1243692
-        - 1243693
-        - 1243696
+Action required
+─────────────── 
+- Redundant instances of linked DWGs must be deleted.
+- EST-AC Level 22.dwg | Instance(s) to delete: 1
+    1. 1242178
+    2. 1242180
+- Level 02.dwg | Instance(s) to delete: 2
+    1. 1243692
+    2. 1243693
+    3. 1243696
 
-───────────────
+──────────────────
 2.1B Imported DWGs
-───────────────
-
-Requirements: 
-- RVT models must not have imported DWG files.
+──────────────────
 
 // Scenario 1: No imported DWGs in the model
 
+Model requirements
+──────────────────
+- RVT models must not have imported DWG files.
+
+Audit results
+─────────────
 - Imported DWGs types in the model: 0
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: One or more imported DWGS in the model
+
+Model requirements
+──────────────────
+- RVT models must not have imported DWG files
+
+Audit results
+─────────────
 - Imported DWGs types in the model: 3
-- Action required: All imported instances from the model must be removed.
-    - Element ID: 1243692 | Name: EST-AC Level 22.dwg
-    - Element ID: 1243694 | Name: Level 02.dwg
-    - Element ID: 1243696 | Name: EST-AC Level MR.dwg
+    1. EST-AC Level 22.dwg
+    2. EST-AC Level MR.dwg
+    3. Level 02.dwg
+
+Action required
+───────────────
+- All imported DWGs must be removed from the model.
+    1. EST-AC Level 22.dwg (1243692)
+    2. EST-AC Level MR.dwg (1243694)
+    3. Level 02.dwg (1243696)
 
 ───────────────────────────
 2.2A Filled regions - Types
 ───────────────────────────
 
-Requirements: 
-- RVT models should use only the standard filled regions types.
-- Standard filled region types must not be modified.
+// The scope of the search in this section of the audit is limited to views (plans, RCPS, elevations, sections) within documentation sheets
 
-// The scope of the search is limited to views (plans, RCPS, elevations, sections) within documentation sheets
 // Scenario 1: No filled region within the documentation views
+
+Model requirements
+──────────────────
+- Documentation views within RVT models must only use the standard filled regions types.
+- Standard filled region types must not be modified. -
+
+Audit results
+─────────────
 - Filled regions within documentation views: 0
 - Modified standard filled region types: N/A
 - Non-standard filled region types: N/A
-- Action required: None
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: No non-standard filled region types within the documentation views
+
+Model requirements
+──────────────────
+- Documentation views within RVT models must only use the standard filled regions types.
+- Standard filled region types must not be modified. 
+
+Audit results
+─────────────
 - Filled regions within documentation views: 123
 - Modified standard filled region types: 0
 - Non-standard filled region types: 0
-- Action required: None
+
+Action required
+───────────────
+- None.
 
 // Scenario 3: At least either one or more modified standard filled region or one or more non-standard filled region types within the documentation views
+
+Model requirements
+──────────────────
+- Documentation views within RVT models must only use the standard filled regions types.
+- Standard filled region types must not be modified. 
+
+Audit results
+─────────────
 - Filled regions within documentation views: 123
-- Modified standard filled region types: 2
-- Action Required: These filled region types must be reversed to the standard settings.
-    - AAI_Concrete
-    - AAI_Gravel
-- Non-standard filled region types: 2
+- Modified standard filled region types:
+    1. AAI_Concrete
+    2. AAI_Gravel
+- Non-standard filled region types
+    1. AAI_Solid_WhiteO
+    2. AAI_Solid_WhiteT
+
+Action required
+───────────────
+- All modified standard filled region types must be reversed to their original condition.
+    1. AAI_Concrete
+    2. AAI_Gravel
+- All non-standard filled region types must be removed from the model or replaced with a standard filled region type
     - AAI_Solid_WhiteO
-    - AAI_Solid_WhiteT
-- Action required: Non-standard filled regions must either be replaced with standard filled regions or removed from the model.
-    - Non-standard filled region type name: AAI_Solid_WhiteO
     - Total instance(s): 3
     - Element ID(s):
         - 1353916
         - 1353918
         - 1353920
-    - Non-standard filled region type name: AAI_Solid_WhiteT
+    - NAAI_Solid_WhiteT
     - Total instance(s): 2
     - Element ID(s):
         - 1353897
         - 1353899
-- Standard filled region types:
-    - AAI_Acoustic_Floor_AA_DiagonalDown
-    - ...
-    - AAI_White
     
 ─────────────────────────────────────────────
 2.2B Filled regions - Non-repeating instances
 ─────────────────────────────────────────────
 
-Requirements: 
-- Filled region elements should be placed either inside families or turned into detail item elements.
-// The scope of the search is limited to views within documentation sheets
 // Scenario 1: No filled region present in the documentation views
+
+Model requirements
+──────────────────
+- Filled region elements should be placed either inside families or turned into detail item elements.
+
+Audit results
+─────────────
 - Filled regions in documentation views: 0
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: Either one or more non-repeating filled regions present in the documentation views
+
+Model requirements
+──────────────────
+- Filled region elements should be placed either inside families or turned into detail item elements.
+
+Audit results
+─────────────
 - Filled regions in documentation views: 123
-- Action required: Filled regions should either be placed inside families or converted into detail item elements.
+
+Action required
+───────────────
+- Filled regions should either be placed inside families or converted into detail item elements.
     - View type and name: Floor Plan - CopyMonitor_DATUM
         - Element ID: 1354022 | Filled region type name: AAI_Concrete
         - Element ID: 1354024 | Filled region type name: AAI_Gravel
@@ -194,28 +276,50 @@ Requirements:
 2.2C Filled regions - Repeating instances
 ─────────────────────────────────────────
 
-Requirements: 
-- Repeating filled regions should be turned into detail item elements.
-// The scope of the search is limited to views within documentation sheets
-// The search criteria is for identical instances of filled regions with the same type, area, and perimeter
-// Scenario 1: No filled region present in the documentation views
+Model requirements
+──────────────────
+- Repeating filled regions must be replaced with detail item elements.
+
+Audit results
+─────────────
 - Filled regions in documentation views: 0
 - Repeating filled regions in documentation views: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: No repeating filled regions present in the documentation views
+
+Model requirements
+──────────────────
+- Repeating filled regions must be replaced with detail item elements.
+
+Audit results
+─────────────
 - Filled regions in documentation views: 123
 - Repeating filled regions in documentation views: 0
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 3: Repeating filled regions present in the documentation views
+
+Model requirements
+──────────────────
+- Repeating filled regions must be replaced with detail item elements.
+
+Audit results
+─────────────
 - Filled regions in documentation views: 123
 - Repeating filled regions in documentation views: 4
-- Action required: Delete the following filled regions or replace them with detail item elements.
+
+Action required
+───────────────
+- These repeating filled regions must be deleted or replaced with detail item elements.
     - View type and name: Floor Plan - CopyMonitor_DATUM // group results by combining view type and name
-        - Repeating filled region type name: AAI Brickwork
-        - Total instance(s): 4
-        - Element ID(s): 
+        - Repeating filled region type name: AAI Brickwork | Total instance(s): 4 | Element ID(s): 
             - 1354022
             - 1354031
             - 1354040
@@ -225,89 +329,109 @@ Requirements:
 2.3 Line patterns
 ─────────────────
 
-Requirements: 
+// Scenario 1: Neither model lines or detail lines visible in documentation views
+
+Model requirements
+──────────────────
 - RVT models should use only the standard line pattern types.
 - Standard line pattern types must not be modified.
-- Standard line pattern types:
-    - AAI_Dash1.5
-    - ...
-    - AAI_Dot_2.5_Fire_Shutters
 
-// Scenario 1: Neither model lines or detail lines visible in documentation views
+Audit results
+─────────────
 - Model lines in documentation views: 0
 - Detail lines in documentation views: 0
 - Non-standard line patterns: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: Neither model lines or detail lines visible in documentation views with non-standard line patterns
+
+Model requirements
+──────────────────
+- RVT models should use only the standard line pattern types.
+- Standard line pattern types must not be modified.
+
+Audit results
+─────────────
 - Model lines in documentation views: 20
 - Detail lines in documentation views: 3
 - Non-standard line patterns: 0
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 3: Either model lines in the model or detail lines in documentation views with non-standard line patterns
-- Model lines in the model: 20
+
+Model requirements
+──────────────────
+- RVT models should use only the standard line pattern types.
+- Standard line pattern types must not be modified.
+
+Audit results
+─────────────
+- Model lines in documentation views: 20
 - Detail lines in documentation views: 3
 - Non-standard line patterns: 2
-    - A-EF_XX_XX-LP_Dash-AAI-DashSpace-X2-00
-    - A-EF_XX_XX-LP_GridLines-AAI-Center-X2-00
-- Action required: Model lines with non-standard line pattern types must be either deleted or changed to use a standard line pattern type.
-    - Line pattern name: A-EF_XX_XX-LP_Dash-AAI-DashSpace-X2-00
-    - Total instance(s): 2
-    - Element ID(s):
+
+Action required
+───────────────
+- Model lines with non-standard line pattern types must be either deleted or changed to use a standard line pattern type.
+    - Line pattern name: A-EF_XX_XX-LP_Dash-AAI-DashSpace-X2-00 | Total instance(s): 2 | Element ID(s):
         - 1354022
         - 1354030
-    - Line pattern name: A-EF_XX_XX-LP_GridLines-AAI-Center-X2-00
-    - Total instance(s): 2
-    - Element ID(s):
+    - Line pattern name: A-EF_XX_XX-LP_GridLines-AAI-Center-X2-00 | Total instance(s): 2 | Element ID(s):
         - 1354022
         - 1354030
-- Action required: Detail lines with non-standard line pattern types must be either deleted or changed to use a standard line pattern type.
+- Detail lines with non-standard line pattern types must be either deleted or changed to use a standard line pattern type.
     - View type and name: Floor Plan - CopyMonitor_DATUM // group results by combining view type and name
-        - Non-standard line pattern name: A-EF_XX_XX-LP_Dash-AAI-DashSpace-X2-00
-        - Total instance(s): 2
-        - Element ID(s):
+        - Non-standard line pattern name: A-EF_XX_XX-LP_Dash-AAI-DashSpace-X2-00 | Total instance(s): 2 | Element ID(s):
             - 1354022
             - 1354031
-        - Non-standard line pattern name: A-EF_XX_XX-LP_GridLines-AAI-Center-X2-00
-        - Total instance(s): 2
-        - Element ID(s):
+        - Non-standard line pattern name: A-EF_XX_XX-LP_GridLines-AAI-Center-X2-00 | Total instance(s): 2 | Element ID(s):
             - 1354040
             - 1354049
 
-──────────────────────────────────
-2.5A Materials - Modified standard
-──────────────────────────────────
-
-Requirements: 
-- RVT models should use only the standard materials types.
-- Standard materials types must not be modified.
+─────────────
+2.5 Materials
+─────────────
 
 // Scenario 1: No modified standard materials in the model
-- Modified standard materials in the model: 0
-- Action required: N/A
 
-// Scenario 2: Either one or more than one modified standard materials in the model
-- Modified standard materials in the model: 3
-- Action required: Modified standard materials must be reversed to the standard settings
-    - AAI_Concrete
-    - AAI_Gravel
-
-─────────────────────────────
-2.5B Materials - Non-standard
-─────────────────────────────
-
-Requirements: 
+Model requirements
+──────────────────
 - RVT models should use only the standard materials types.
 - Standard materials types must not be modified.
 
-// Scenario 1: No non-standard materials in the model
+Audit results
+─────────────
+- Modified standard materials in the model: 0
 - Non-standard materials in the model: 0
-- Action required: N/A
 
-// Scenario 2: Either one or more than one non-standard materials in the model
-- Non-standard materials in the model: 3
-- Action required: Non-standard materials must be must be either removed or replaced with a standard material.
+Action required
+───────────────
+- None.
+
+// Scenario 2: Either one or more than one modified materials in the model
+
+Model requirements
+──────────────────
+- RVT models should use only the standard materials types.
+- Standard materials types must not be modified.
+
+Audit results
+─────────────
+- Modified standard materials in the model: 2
+- Non-standard materials in the model: 2
+
+Action required
+───────────────
+- Modified standard materials must be reversed to the standard settings
+    - AAI_Concrete
+    - AAI_Gravel
+- Non-standard materials must be must be either removed or replaced with a standard material.
     - A-XX-M-SST-000
     - bimstore_Formica_HighPressureLaminate
 
@@ -315,23 +439,50 @@ Requirements:
 2.6A Naming Convention - Host elements type names
 ─────────────────────────────────────────────────
 
-Requirements:
+// Scenario 1: No host elements in the model
+
+Model requirements
+──────────────────
 - Host element (ceilings, floors, ramps, roofs, stairs, and walls) types names must follow the principles outlined in documents AAIUK-AAI-BM-XX-SD-A-00102 and BIM-AAI-XX-XX-RP-AR-00011
 
-// Scenario 1: No host elements in the model
+Audit results
+─────────────
 - Host elements types in the model: 0
 - Non-standard host element type names in the model: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None
 
 // Scenario 2: All host elements type names comply with AAI standards
+
+Model requirements
+──────────────────
+- Host element (ceilings, floors, ramps, roofs, stairs, and walls) types names must follow the principles outlined in documents AAIUK-AAI-BM-XX-SD-A-00102 and BIM-AAI-XX-XX-RP-AR-00011
+
+Audit results
+─────────────
 - Host elements types in the model: 123
 - Non-standard host element type names in the model: 0
-- Action required: None.
+
+Action required
+───────────────
+- None
 
 // Scenario 3: At least one host element type name does not comply with with AAI standards
+
+Model requirements
+──────────────────
+- Host element (ceilings, floors, ramps, roofs, stairs, and walls) types names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102 and BIM-AAI-XX-XX-RP-AR-00011
+
+Audit results
+─────────────
 - Host elements types in the model: 123
-- Non-standard host element type names in the model: 4
-- Action required: These host element types must be either removed from the model or renamed to match AAI the criteria from BIM-AAI-XX-XX-RP-AR-00011
+- Non-standard host element type names in the model: 10
+
+Action required
+───────────────
+- These host element types must be either removed from the model or renamed to follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102 and BIM-AAI-XX-XX-RP-AR-00011.
     - Ceilings // Regex: /AAI_CLG_CAS-[0-9][0-9][0-9](_.*|$)
         - AAI_CLG_Insulation160
         - AAI_Soffit_Placeholder
@@ -354,23 +505,50 @@ Requirements:
 // Use regex "AAI_ANO_.*", "AAI_BAL_.*", "AAI_CSW_.*", ... for each category
 // Not sure if we want to have this level of scrutiny as the naming of types
 
-Requirements:
-- Component elements types names must follow the principles outlined in documents AAIUK-AAI-BM-XX-SD-A-00102.
-
 // Scenario 1: No elements in the model
+
+Model requirements
+──────────────────
+- Component elements types names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
 - Component element families in the model: 0
 - Non-standard element family names in the model: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: All elements family names comply with AAI standards
+
+Model requirements
+──────────────────
+- Component elements types names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
 - Component element families in the model: 25
 - Non-standard element family names in the model: 0
-- Action required: None.
 
-// Scenario 3: At least one family names comply with AAI standards
+Action required
+───────────────
+- None.
+
+// Scenario 3: At least one family names does not comply with AAI standards
+
+Model requirements
+──────────────────
+- Component elements types names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
 - Component element families in the model: 25
 - Non-standard element family names in the model: 3
-- Action required: These component element types must be removed from the model or renamed to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
+
+Action required
+───────────────
+- These component element types must be removed from the model or renamed to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
     - Doors
         - AAI_GlassDoorPanel
     - Furniture
@@ -382,21 +560,51 @@ Requirements:
 2.6C Naming Convention - View Templates
 ───────────────────────────────────────
 
+// Use regex "AAI_([0-9][0-9]|[XZ][XZ]).*"
 // Scenario 1: No view templates in the model
+
+Model requirements
+──────────────────
+- View template names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
 - View templates in the model: 0
 - Non-standard view template names in the model: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: All view template names comply with AAI standards
-- View templates in the model: 123
-- Non-standard view template names in the model: 0
-- Action required: None.
 
-// Use regex "AAI_([0-9][0-9]|[XZ][XZ]).*"
+Model requirements
+──────────────────
+- View template names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- View templates in the model: 20
+- Non-standard view template names in the model: 0
+
+Action required
+───────────────
+- None.
+
 // Scenario 3: At least one view template name does not comply with with AAI standards
-- View templates in the model: 123
-- Non-standard view template names in the model: 5
-- Action required: These view templates must be removed from the model or renamed them to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
+
+Model requirements
+──────────────────
+- View template names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- View templates in the model: 20
+- Non-standard view template names in the model: 2
+
+Action required
+───────────────
+- These view templates must be removed from the model or renamed them to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
     - AAI_FRB_DesignOptions3D
     - FRB_Demolition
 
@@ -404,32 +612,110 @@ Requirements:
 2.6D Naming Convention - Filters
 ────────────────────────────────
 
+// Use regex "AAI_([0-9][0-9]|[XZ][XZ]).*"
 // Scenario 1: No filters in the model
+
+Model requirements
+──────────────────
+- Filter names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
 - Filters in the model: 0
 - Non-standard filter names in the model: N/A
-- Action required: None.
+
+Action required
+───────────────
+- None.
 
 // Scenario 2: All filter names comply with AAI standards
-- Filters in the model: 123
-- Non-standard filter names in the model: 0
-- Action required: None.
 
-// Use regex "AAI_([0-9][0-9]|[XZ][XZ]).*"
+Model requirements
+──────────────────
+- Filter names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- Filters in the model: 20
+- Non-standard filter names in the model: 0
+
+Action required
+───────────────
+- None.
+
 // Scenario 3: At least one view template name does not comply with with AAI standards
-- View templates in the model: 123
-- Non-standard view template names in the model: 5
-- Action required: These filters must be removed from the model or renamed to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
+
+Model requirements
+──────────────────
+- Filter names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- Filters in the model: 20
+- Non-standard filter names in the model: 2
+
+Action required
+───────────────
+- These filters must be removed from the model or renamed to match the criteria from AAIUK-AAI-BM-XX-SD-A-00102
     - AAI_FRB_DesignOptions3D
     - FRB_Demolition
 
-────────────────────────────────
+───────────────────────────────────────
 2.6E Naming Convention - Filled regions
-────────────────────────────────
-// Combine with analysis of filled regions?
+───────────────────────────────────────
 
-────────────────────────────────
+// Use regex  @"AAI_[a-zA-Z]+_[a-zA-Z0-9_]+"gm
+
+// Scenario 1: No filled regions in the model
+
+Model requirements
+──────────────────
+- Filled region names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- Filled region types in the model: 0
+- Non-standard filled region type names in the model: N/A
+
+Action required
+───────────────
+- None.
+
+// Scenario 2: All filled regions in the model follow the naming principles
+
+Model requirements
+──────────────────
+- Filled region names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- Filled region types in the model: 20
+- Non-standard filled region type names in the model: 0
+
+Action required
+───────────────
+- None.
+
+// Scenario 3: At least one filled region in the model does not follow the naming principles
+
+Model requirements
+──────────────────
+- Filled region names must follow the principles outlined in AAIUK-AAI-BM-XX-SD-A-00102.
+
+Audit results
+─────────────
+- Filled region types in the model: 20
+- Non-standard filled region type names in the model: 2
+
+Action required
+───────────────
+- These filled region types must be either removed from the model or renamed to follow AAIUK-AAI-BM-XX-SD-A-00102.
+    - Glass
+    - AAI_Red
+
+──────────────────────────────────────
 2.6F Naming Convention - Fill patterns
-────────────────────────────────
+──────────────────────────────────────
 
 // Scenario 1: No fill patterns in the model (higly unlikely)
 - Fill patterns in the model: 0
@@ -675,171 +961,4 @@ Requirements:
 - Available worksets in the model
     - AAI_A0_General
     - AAI_A0_SpecialtyEquipment
-
-═══════════════════════════════════════════════════════════════
-3. FAMILIES
-═══════════════════════════════════════════════════════════════
-
-─────────────────────────────
-3.1 Project Content Analysis
-─────────────────────────────
-
-// the strategy below was worked out with chatGPT
-
-STRATEGY: COMPARE TWO REVIT MODELS USING FAMILYINSTANCE
-
-1. Access both Revit Document objects (Model A and Model B).
-
-2. Use FilteredElementCollector with FamilyInstance to collect all placed family instances from each model.
-
-3. For each FamilyInstance, extract the relevant information:
-   - Family Name
-   - Category
-   - Type Name (optional)
-   - Instance count
-
-4. Build a unique collection of families for each model, preferably using a HashSet or Dictionary.
-
-5. Compare the collections using LINQ:
-   - Intersect() → Families present in both models
-   - Except() → Families only present in Model A
-   - Except() → Families only present in Model B
-
-6. Optionally group FamilyInstances by family and count the number of instances in each model.
-
-7. Present the results as:
-   - Common families
-   - Families only in Model A
-   - Families only in Model B
-   - Instance-count differences
-
-──────────────────
-3.2 Generic Models
-──────────────────
-
-// Search criteria to exclude the following families:
-- AAI_GEN_Coordination_LowPriority
-- AAI_GEN_Coordination_Marker
-- AAI_GEN_Opening
-
-// Scenario 1: No generic model elements in the model
-- Generic model elements in the model: 0
-- Action required: None.
-
-// Scenario 2: At least one generic model element in the model
-- Generic model element types in the model: 4
-- Action required: Change the category of the following family types or remove them from the model
-    - AAI_DIT_SoftSpot
-    - AAI_GEN_Toilet_WallHook
-    - AAI_PLM_Soap Dispenser
-    - AAI_Soffit_ReceptionOvercladEdge
-
-───────────────────────────
-3.2 Model-In-Place Elements
-───────────────────────────
-
-═══════════════════════════════════════════════════════════════
-4. PERFORMANCE
-═══════════════════════════════════════════════════════════════
-
-// Scenario 1: No Model-In-Place elements in the model
-- Model-In-Place elements in the model: 0
-- Action required: None.
-
-// Scenario 2: At least one Model-In-Place element in the model
-- Model-In-Place elements in the model: 3
-- Action required: Turn the following in-place elements into component elements, or remove them from the model.
-    - Element ID: 1243694
-    - Element ID: 1243696
-
 ```
-
-## 2026-07-28
-- **The next section to develop is the one that checks the position of the project base point**
-
-## 2026-07-27
-- Over the last weeks I have switched from console output to HTML output.
-- I am not sure if HTML will be the definitive output, as I think it would be interesting to have a metric of "audit cycles" to measure in how many audits something has been flagged, and I doubt that HTML will help with this approach.
-- There is a substantial amount of redundant code from the previous version (the code that writes to the console). I am going to remove it as it is no longer required and also because I have been using Github to store previous versions of the code.
-- On formatting:
-    - Currently the output is a table for each section.
-    - The width of the columns is based in n+1 columns, where the leftmost column is left as Id for the field in question and the remaining space is divided amongst the fields.
-    - With 13 columns (12+1) it is possible to divide into 1, 2, 3, 4, and 6, as well as splitting into 5+7 with the leftmost column available
-
-## Audit Information
-
-| Information | Source |
-| --- | --- |
-| File Name | API > Document Class > Title, Rename to "Model Identification" |
-| Model description | Shared Parameter > AAI_ModelDescription |
-| File size | double AAI_fileSize |
-| Project number | API > ProjectInfo class > Number |
-| Project name | API > ProjectInfo class > Name |
-| Project Manager | variable > string AAI_projectManager |
-| BIM Coordinator | Shared Parameter > AAI_BIMLead |
-| Auditor | variable > string AAI_modelAuditor |
-| Issue date | Variable > string AAI_auditDate OR find a method to extract the current date in ISO format |
-
-## Model Information
-
-| Information | Source |
-| --- | --- |
-| Splash Screen/Model Information  | Variable > bool IsSplashScreenCorrect |
-| Revit Version | Shared Parameter > AAI_ModelDescription |
-| Autodesk Desktop Connector Version | Variable > str AutodeskDesktopConnectorVersion |
-| Coordinates | API > BasePoint class > Position |
-| Copy Monitor | Variable > isCopyMonitorEnabled |
-| Published Sets | Variable > arePublishedSetsChecked |
-
-## Formulas for evaluating quantities
-
-`quantityEvaluation = Math.Round(2,Math.Log10((1+(9/(1+x)))))`
-
-![alt text](image.png)
-
-## Formulas for evaluating ratios
-
-When working with ratios a must be between 0 and b, but never higher than b
-
-`ratioEvaluation = Math.Round(2,(Math.Log10(1+(9*(1-(a/b))))))`
-
-## Project Browser
-
-- Views not placed in sheets, and not placed in .MANAGEMENT: Extract score.
-
-## Families
-
-- Families file size: Return list with all families in the model sorted by size.
-- System families naming convention: Type name begins with `AAI_`
-- Loadable families naming convention: Family name begins with `AAI_`
-
-## Architecture
-
-
-
-## Insert
-
-
-
-## Annotate
-
-
-
-## Collaborate
-
-
-
-## View
-
-
-
-## Manage
-
-
-
-## Modify
-
-## Messages
-
-### 1.1 Model Auditor
-
